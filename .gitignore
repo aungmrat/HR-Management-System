@@ -1,0 +1,11 @@
+/target/
+logs/
+*.log
+screenshots/
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+/src/main/resources/application.properties
