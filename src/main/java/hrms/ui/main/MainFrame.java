@@ -116,7 +116,7 @@ public class MainFrame extends javax.swing.JFrame {
   private static final Set<String> WIRED_CARDS =
           Set.of("dashboard", "department", "office", "position", "role",
                   "team", "team_member", "user", "staff", "language_skill",
-                  "military_service", "family_member");
+                  "military_service", "family_member", "overtime_policy");
 
   /**
    * Cards that expose {@code refreshTable()}; invoked on navigation so a screen
@@ -179,6 +179,8 @@ public class MainFrame extends javax.swing.JFrame {
     hrms.ui.staff_management.LanguageSkill languageSkill = new hrms.ui.staff_management.LanguageSkill();
     hrms.ui.staff_management.MilitaryService militaryService = new hrms.ui.staff_management.MilitaryService();
     hrms.ui.staff_management.FamilyMember familyMember = new hrms.ui.staff_management.FamilyMember();
+    hrms.ui.compensation_policy.OvertimePolicy overtimePolicy =
+            new hrms.ui.compensation_policy.OvertimePolicy();
     content_panel.add(department, "department");
     content_panel.add(office, "office");
     content_panel.add(position, "position");
@@ -190,6 +192,7 @@ public class MainFrame extends javax.swing.JFrame {
     content_panel.add(languageSkill, "language_skill");
     content_panel.add(militaryService, "military_service");
     content_panel.add(familyMember, "family_member");
+    content_panel.add(overtimePolicy, "overtime_policy");
     refreshers.put("department", department::refreshTable);
     refreshers.put("office", office::refreshTable);
     refreshers.put("position", position::refreshTable);
@@ -201,6 +204,7 @@ public class MainFrame extends javax.swing.JFrame {
     refreshers.put("language_skill", languageSkill::refreshTable);
     refreshers.put("military_service", militaryService::refreshTable);
     refreshers.put("family_member", familyMember::refreshTable);
+    refreshers.put("overtime_policy", overtimePolicy::refreshTable);
     // Every other visible menu leaf gets a placeholder card so navigation
     // never silently no-ops.
     for (MenuLeaf leaf : visibleLeaves()) {

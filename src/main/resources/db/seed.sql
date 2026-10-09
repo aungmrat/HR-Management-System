@@ -118,6 +118,8 @@ INSERT IGNORE INTO permission (code, module, description) VALUES
   ('HOLIDAY_CALENDAR_VIEW',       'leave_management',   'View holiday calendar'),
   -- Compensation Policy
   ('OVERTIME_POLICY_VIEW',        'compensation_policy', 'View overtime policies'),
+  ('OVERTIME_POLICY_CREATE',      'compensation_policy', 'Create overtime policies'),
+  ('OVERTIME_POLICY_UPDATE',      'compensation_policy', 'Edit or delete overtime policies'),
   ('BENEFIT_VIEW',                'compensation_policy', 'View benefits'),
   ('ALLOWANCE_VIEW',              'compensation_policy', 'View allowances'),
   ('SALARY_RATE_VIEW',            'compensation_policy', 'View salary rates'),
