@@ -130,6 +130,8 @@ INSERT IGNORE INTO permission (code, module, description) VALUES
   ('SALARY_RATE_CREATE',          'compensation_policy', 'Create salary rates'),
   ('SALARY_RATE_UPDATE',          'compensation_policy', 'Edit or delete salary rates'),
   ('TAX_VIEW',                    'compensation_policy', 'View taxes'),
+  ('TAX_CREATE',                  'compensation_policy', 'Create tax brackets'),
+  ('TAX_UPDATE',                  'compensation_policy', 'Edit or delete tax brackets'),
   -- Payroll & Compensation
   ('STAFF_SALARY_VIEW',           'payroll_compensation', 'View staff salaries'),
   ('STAFF_BENEFIT_VIEW',          'payroll_compensation', 'View staff benefits'),
