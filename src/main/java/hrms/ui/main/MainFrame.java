@@ -8,12 +8,12 @@ import hrms.config.ServiceRegistry;
 import hrms.ui.office.Office;
 import hrms.ui.dashboard.Dashboard;
 import hrms.ui.department.Department;
-import hrms.ui.admin_hierarchy.Position;
-import hrms.ui.admin_hierarchy.Roles;
-import hrms.ui.admin_hierarchy.Team;
-import hrms.ui.admin_hierarchy.TeamMember;
-import hrms.ui.user_management.User;
-import hrms.ui.staff_management.Staff;
+import hrms.ui.adminhierarchy.Position;
+import hrms.ui.adminhierarchy.Roles;
+import hrms.ui.adminhierarchy.Team;
+import hrms.ui.adminhierarchy.TeamMember;
+import hrms.ui.usermanagement.User;
+import hrms.ui.staffmanagement.Staff;
 import hrms.security.Permissions;
 import hrms.security.SessionContext;
 import java.util.List;
@@ -177,19 +177,19 @@ public class MainFrame extends javax.swing.JFrame {
     TeamMember teamMember = new TeamMember();
     User user = new User();
     Staff staff = new Staff();
-    hrms.ui.staff_management.LanguageSkill languageSkill = new hrms.ui.staff_management.LanguageSkill();
-    hrms.ui.staff_management.MilitaryService militaryService = new hrms.ui.staff_management.MilitaryService();
-    hrms.ui.staff_management.FamilyMember familyMember = new hrms.ui.staff_management.FamilyMember();
-    hrms.ui.compensation_policy.OvertimePolicy overtimePolicy =
-            new hrms.ui.compensation_policy.OvertimePolicy();
-    hrms.ui.compensation_policy.Benefit benefitPanel =
-            new hrms.ui.compensation_policy.Benefit();
-    hrms.ui.compensation_policy.Allowance allowancePanel =
-            new hrms.ui.compensation_policy.Allowance();
-    hrms.ui.compensation_policy.SalaryRate salaryRatePanel =
-            new hrms.ui.compensation_policy.SalaryRate();
-    hrms.ui.compensation_policy.Tax taxPanel =
-            new hrms.ui.compensation_policy.Tax();
+    hrms.ui.staffmanagement.LanguageSkill languageSkill = new hrms.ui.staffmanagement.LanguageSkill();
+    hrms.ui.staffmanagement.MilitaryService militaryService = new hrms.ui.staffmanagement.MilitaryService();
+    hrms.ui.staffmanagement.FamilyMember familyMember = new hrms.ui.staffmanagement.FamilyMember();
+    hrms.ui.compensationpolicy.OvertimePolicy overtimePolicy =
+            new hrms.ui.compensationpolicy.OvertimePolicy();
+    hrms.ui.compensationpolicy.Benefit benefitPanel =
+            new hrms.ui.compensationpolicy.Benefit();
+    hrms.ui.compensationpolicy.Allowance allowancePanel =
+            new hrms.ui.compensationpolicy.Allowance();
+    hrms.ui.compensationpolicy.SalaryRate salaryRatePanel =
+            new hrms.ui.compensationpolicy.SalaryRate();
+    hrms.ui.compensationpolicy.Tax taxPanel =
+            new hrms.ui.compensationpolicy.Tax();
     content_panel.add(department, "department");
     content_panel.add(office, "office");
     content_panel.add(position, "position");
