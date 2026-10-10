@@ -124,6 +124,8 @@ INSERT IGNORE INTO permission (code, module, description) VALUES
   ('BENEFIT_CREATE',              'compensation_policy', 'Create benefits'),
   ('BENEFIT_UPDATE',              'compensation_policy', 'Edit or delete benefits'),
   ('ALLOWANCE_VIEW',              'compensation_policy', 'View allowances'),
+  ('ALLOWANCE_CREATE',            'compensation_policy', 'Create allowances'),
+  ('ALLOWANCE_UPDATE',            'compensation_policy', 'Edit or delete allowances'),
   ('SALARY_RATE_VIEW',            'compensation_policy', 'View salary rates'),
   ('TAX_VIEW',                    'compensation_policy', 'View taxes'),
   -- Payroll & Compensation
