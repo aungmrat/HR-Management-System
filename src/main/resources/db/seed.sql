@@ -121,6 +121,8 @@ INSERT IGNORE INTO permission (code, module, description) VALUES
   ('OVERTIME_POLICY_CREATE',      'compensation_policy', 'Create overtime policies'),
   ('OVERTIME_POLICY_UPDATE',      'compensation_policy', 'Edit or delete overtime policies'),
   ('BENEFIT_VIEW',                'compensation_policy', 'View benefits'),
+  ('BENEFIT_CREATE',              'compensation_policy', 'Create benefits'),
+  ('BENEFIT_UPDATE',              'compensation_policy', 'Edit or delete benefits'),
   ('ALLOWANCE_VIEW',              'compensation_policy', 'View allowances'),
   ('SALARY_RATE_VIEW',            'compensation_policy', 'View salary rates'),
   ('TAX_VIEW',                    'compensation_policy', 'View taxes'),
