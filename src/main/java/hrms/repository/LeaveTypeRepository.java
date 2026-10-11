@@ -62,9 +62,9 @@ public final class LeaveTypeRepository {
             INSERT INTO leave_type
               (code, name, description, standard_days_per_year, max_days_per_year,
                half_day_allowed, is_carry_forward, carry_max_days,
-               requires_pre_approval, is_active,
+               requires_pre_approval, gender_restriction, is_active,
                created_by, created_date, is_deleted)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, FALSE)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, FALSE)
             """,
             code,
             leaveType.getName(),
@@ -75,6 +75,7 @@ public final class LeaveTypeRepository {
             leaveType.isCarryForward(),
             leaveType.getCarryMaxDays(),
             leaveType.isRequiresPreApproval(),
+            leaveType.getGenderRestriction(),
             leaveType.isActive(),
             leaveType.getCreatedBy());
   }
@@ -99,6 +100,7 @@ public final class LeaveTypeRepository {
                    is_carry_forward = ?,
                    carry_max_days = ?,
                    requires_pre_approval = ?,
+                   gender_restriction = ?,
                    is_active = ?,
                    modified_by = ?,
                    modified_date = CURRENT_TIMESTAMP
@@ -113,6 +115,7 @@ public final class LeaveTypeRepository {
             leaveType.isCarryForward(),
             leaveType.getCarryMaxDays(),
             leaveType.isRequiresPreApproval(),
+            leaveType.getGenderRestriction(),
             leaveType.isActive(),
             leaveType.getModifiedBy(),
             leaveType.getId());
@@ -140,7 +143,7 @@ public final class LeaveTypeRepository {
           SELECT lt.id, lt.code, lt.name, lt.description,
                  lt.standard_days_per_year, lt.max_days_per_year,
                  lt.half_day_allowed, lt.is_carry_forward, lt.carry_max_days,
-                 lt.requires_pre_approval, lt.is_active,
+                 lt.requires_pre_approval, lt.gender_restriction, lt.is_active,
                  lt.created_by, lt.created_date,
                  (SELECT COALESCE(st.name, u.username)
                     FROM `user` u
@@ -167,6 +170,7 @@ public final class LeaveTypeRepository {
             rs.getTimestamp("created_date") == null
                     ? null : rs.getTimestamp("created_date").toLocalDateTime());
     leaveType.setCreatorName(rs.getString("creator_name"));
+    leaveType.setGenderRestriction(rs.getString("gender_restriction"));
     return leaveType;
   }
 

@@ -18,6 +18,8 @@ public class LeaveType {
   /** Maximum days that may be carried into the next year; null when not carried. */
   private Integer carryMaxDays;
   private boolean requiresPreApproval;
+  /** Gender restriction: 'Male', 'Female' or 'Both'. */
+  private String genderRestriction = "Both";
   private boolean active;
   private Long createdBy;
   private LocalDateTime createdDate;
@@ -55,7 +57,7 @@ public class LeaveType {
   public static LeaveType create(String code, String name, String description,
           int standardDaysPerYear, int maxDaysPerYear, boolean halfDayAllowed,
           boolean carryForward, Integer carryMaxDays, boolean requiresPreApproval,
-          boolean active, Long createdBy) {
+          String genderRestriction, boolean active, Long createdBy) {
     LeaveType leaveType = new LeaveType();
     leaveType.code = code;
     leaveType.name = name;
@@ -66,6 +68,8 @@ public class LeaveType {
     leaveType.carryForward = carryForward;
     leaveType.carryMaxDays = carryMaxDays;
     leaveType.requiresPreApproval = requiresPreApproval;
+    leaveType.genderRestriction = genderRestriction == null || genderRestriction.isBlank()
+            ? "Both" : genderRestriction;
     leaveType.active = active;
     leaveType.createdBy = createdBy;
     return leaveType;
@@ -74,7 +78,7 @@ public class LeaveType {
   /**
    * Row shape expected by {@code HrmsTable}:
    * ID, Code, Name, Standard Days, Max Days, Half Day, Carry Forward,
-   * Carry Max Days, Pre-approval, Active, Created By, Created Date.
+   * Carry Max Days, Pre-approval, Gender, Active, Created By, Created Date.
    * Description is omitted (up to 500 characters).
    */
   public Object[] toTableRow() {
@@ -88,6 +92,7 @@ public class LeaveType {
       carryForward ? "Yes" : "No",
       carryMaxDays == null ? "" : carryMaxDays,
       requiresPreApproval ? "Yes" : "No",
+      genderRestriction == null || genderRestriction.isBlank() ? "Both" : genderRestriction,
       active ? "Yes" : "No",
       creatorName != null ? creatorName
               : createdBy == null ? "—" : String.valueOf(createdBy),
@@ -173,6 +178,25 @@ public class LeaveType {
 
   public void setRequiresPreApproval(boolean requiresPreApproval) {
     this.requiresPreApproval = requiresPreApproval;
+  }
+
+  public String getGenderRestriction() {
+    return genderRestriction == null || genderRestriction.isBlank()
+            ? "Both" : genderRestriction;
+  }
+
+  public void setGenderRestriction(String genderRestriction) {
+    this.genderRestriction = genderRestriction == null || genderRestriction.isBlank()
+            ? "Both" : genderRestriction;
+  }
+
+  /** True when this type may be granted to an employee of the given sex. */
+  public boolean allowsSex(String sex) {
+    String restriction = getGenderRestriction();
+    if ("Both".equalsIgnoreCase(restriction)) {
+      return true;
+    }
+    return restriction.equalsIgnoreCase(sex);
   }
 
   public boolean isActive() {

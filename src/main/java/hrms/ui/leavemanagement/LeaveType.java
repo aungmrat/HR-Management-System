@@ -117,7 +117,7 @@ public class LeaveType extends javax.swing.JPanel {
   private void setupTable() {
     table = HrmsTable.builder(
         "ID", "Code", "Name", "Standard Days", "Max Days", "Half Day",
-        "Carry Forward", "Carry Max Days", "Pre-approval", "Active",
+        "Carry Forward", "Carry Max Days", "Pre-approval", "Gender", "Active",
         "Created By", "Created Date")
         .hiddenColumn(0)
         .fixedColumn(1, 70)
@@ -128,9 +128,10 @@ public class LeaveType extends javax.swing.JPanel {
         .fixedColumn(6, 110)
         .fixedColumn(7, 110)
         .fixedColumn(8, 100)
-        .fixedColumn(9, 70)
-        .fixedColumn(10, 110)
-        .fixedColumn(11, 130)
+        .fixedColumn(9, 80)
+        .fixedColumn(10, 70)
+        .fixedColumn(11, 110)
+        .fixedColumn(12, 130)
         .onDoubleClick((viewRow, modelRow) -> runGuarded(() -> {
           long id = ((Number) table.getModel().getValueAt(modelRow, 0)).longValue();
           openEditLeaveTypeDialog(id);
