@@ -53,6 +53,7 @@ public class LeaveTypeDialog extends javax.swing.JDialog {
     comboIsCarryForward.setSelectedItem("No");
     comboRequirePreApproval.setSelectedItem("No");
     comboIsActive.setSelectedItem("Yes");
+    comboForGender.setSelectedItem("Both");
   }
 
   private void prefill(LeaveType leaveType) {
@@ -68,6 +69,7 @@ public class LeaveTypeDialog extends javax.swing.JDialog {
             ? "" : String.valueOf(leaveType.getCarryMaxDays()));
     comboRequirePreApproval.setSelectedItem(leaveType.isRequiresPreApproval() ? "Yes" : "No");
     comboIsActive.setSelectedItem(leaveType.isActive() ? "Yes" : "No");
+    comboForGender.setSelectedItem(leaveType.getGenderRestriction());
   }
 
   private void setupActions() {
@@ -140,6 +142,8 @@ public class LeaveTypeDialog extends javax.swing.JDialog {
       boolean halfDayAllowed = "Yes".equals(comboHalfDayAllowed.getSelectedItem());
       boolean requiresPreApproval = "Yes".equals(comboRequirePreApproval.getSelectedItem());
       boolean active = "Yes".equals(comboIsActive.getSelectedItem());
+      String gender = comboForGender.getSelectedItem() == null
+              ? "Both" : comboForGender.getSelectedItem().toString();
 
       if (!errors.isEmpty()) {
         throw new ValidationException(errors);
@@ -158,13 +162,14 @@ public class LeaveTypeDialog extends javax.swing.JDialog {
         leaveType.setCarryForward(carryForward);
         leaveType.setCarryMaxDays(carryMaxDays);
         leaveType.setRequiresPreApproval(requiresPreApproval);
+        leaveType.setGenderRestriction(gender);
         leaveType.setActive(active);
         leaveType.setModifiedBy(userId);
       } else {
         leaveType = LeaveType.create(code, name,
                 description.isEmpty() ? null : description,
                 standardDays, maxDays, halfDayAllowed, carryForward, carryMaxDays,
-                requiresPreApproval, active, userId);
+                requiresPreApproval, gender, active, userId);
       }
 
       btnSave.setEnabled(false);
@@ -250,6 +255,8 @@ public class LeaveTypeDialog extends javax.swing.JDialog {
     comboRequirePreApproval = new javax.swing.JComboBox<>();
     labelIsActive = new javax.swing.JLabel();
     comboIsActive = new javax.swing.JComboBox<>();
+    labelForGender = new javax.swing.JLabel();
+    comboForGender = new javax.swing.JComboBox<>();
 
     setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -422,6 +429,22 @@ public class LeaveTypeDialog extends javax.swing.JDialog {
     gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
     body.add(comboIsActive, gridBagConstraints);
 
+    labelForGender.setText("For Gender");
+    gridBagConstraints = new java.awt.GridBagConstraints();
+    gridBagConstraints.gridx = 0;
+    gridBagConstraints.gridy = 10;
+    gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+    gridBagConstraints.insets = new java.awt.Insets(6, 0, 0, 16);
+    body.add(labelForGender, gridBagConstraints);
+
+    comboForGender.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Male", "Female", "Both" }));
+    gridBagConstraints = new java.awt.GridBagConstraints();
+    gridBagConstraints.gridx = 1;
+    gridBagConstraints.gridy = 10;
+    gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+    gridBagConstraints.insets = new java.awt.Insets(6, 0, 0, 0);
+    body.add(comboForGender, gridBagConstraints);
+
     getContentPane().add(body, java.awt.BorderLayout.CENTER);
 
     pack();
@@ -468,6 +491,7 @@ public class LeaveTypeDialog extends javax.swing.JDialog {
   private javax.swing.JPanel body;
   private javax.swing.JButton btnCancel;
   private javax.swing.JButton btnSave;
+  private javax.swing.JComboBox<String> comboForGender;
   private javax.swing.JComboBox<String> comboHalfDayAllowed;
   private javax.swing.JComboBox<String> comboIsActive;
   private javax.swing.JComboBox<String> comboIsCarryForward;
@@ -476,6 +500,7 @@ public class LeaveTypeDialog extends javax.swing.JDialog {
   private javax.swing.JLabel labelCarryMaxDays;
   private javax.swing.JLabel labelCode;
   private javax.swing.JLabel labelDescription;
+  private javax.swing.JLabel labelForGender;
   private javax.swing.JLabel labelHalfDayAllowed;
   private javax.swing.JLabel labelIsActive;
   private javax.swing.JLabel labelIsCarryForward;

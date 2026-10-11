@@ -111,6 +111,8 @@ INSERT IGNORE INTO permission (code, module, description) VALUES
   ('LEAVE_TYPE_CREATE',           'leave_management',   'Create leave types'),
   ('LEAVE_TYPE_UPDATE',           'leave_management',   'Edit or delete leave types'),
   ('LEAVE_ENTITLEMENT_VIEW',      'leave_management',   'View leave entitlements'),
+  ('LEAVE_ENTITLEMENT_CREATE',    'leave_management',   'Create leave entitlements'),
+  ('LEAVE_ENTITLEMENT_UPDATE',    'leave_management',   'Edit or delete leave entitlements'),
   ('LEAVE_APPLICATION_VIEW',      'leave_management',   'View leave applications'),
   ('LEAVE_APPLICATION_CREATE',    'leave_management',   'Submit leave applications'),
   ('LEAVE_APPROVAL_VIEW',         'leave_management',   'View leave approval queue'),
