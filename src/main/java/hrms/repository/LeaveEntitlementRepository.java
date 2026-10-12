@@ -188,6 +188,66 @@ public final class LeaveEntitlementRepository {
             });
   }
 
+  /** One staff's entitlement ledger row for the balance tab. */
+  public record BalanceRow(long staffId, String staff, String type,
+          int entitled, int carried, int used, int remaining,
+          LocalDate effective, LocalDate expiry) {
+
+    public Object[] toTableRow(boolean includeStaff) {
+      if (includeStaff) {
+        return new Object[]{staff, type, entitled, carried, used, remaining,
+          effective, expiry};
+      }
+      return new Object[]{type, entitled, carried, used, remaining, effective, expiry};
+    }
+  }
+
+  /**
+   * Balance-tab rows for a year, optionally filtered by staff keyword and
+   * restricted to one staff (self-service scope).
+   */
+  public static List<BalanceRow> listBalanceRows(String keyword, int year,
+          Long restrictToStaffId) {
+    List<Object> params = new ArrayList<>();
+    StringBuilder sql = new StringBuilder("""
+            SELECT e.staff_id, e.entitled_days, e.carried_days, e.used_days,
+                   e.effective_date, e.expiry_date,
+                   CONCAT(s.code, ' - ', s.name) AS staff_name,
+                   CONCAT(lt.code, ' - ', lt.name) AS type_name
+              FROM leave_entitlement e
+              JOIN staff s ON s.id = e.staff_id
+              JOIN leave_type lt ON lt.id = e.leave_type_id
+             WHERE e.is_deleted = FALSE AND YEAR(e.effective_date) = ?
+            """);
+    params.add(year);
+    if (restrictToStaffId != null) {
+      sql.append(" AND e.staff_id = ?");
+      params.add(restrictToStaffId);
+    }
+    String term = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+    if (!term.isEmpty()) {
+      sql.append(" AND (LOWER(s.code) LIKE CONCAT('%', ?, '%') "
+              + "OR LOWER(s.name) LIKE CONCAT('%', ?, '%'))");
+      params.add(term);
+      params.add(term);
+    }
+    sql.append(" ORDER BY s.code, lt.code");
+    return Sql.query(sql.toString(), rs -> {
+      int entitled = rs.getInt("entitled_days");
+      int carried = rs.getInt("carried_days");
+      int used = rs.getInt("used_days");
+      java.sql.Date effective = rs.getDate("effective_date");
+      java.sql.Date expiry = rs.getDate("expiry_date");
+      return new BalanceRow(
+              rs.getLong("staff_id"),
+              rs.getString("staff_name"),
+              rs.getString("type_name"),
+              entitled, carried, used, entitled + carried - used,
+              effective == null ? null : effective.toLocalDate(),
+              expiry == null ? null : expiry.toLocalDate());
+    }, params.toArray());
+  }
+
   /** staffId:typeId pairs that already exist for the given entitlement start. */
   public static Set<String> existingKeys(LocalDate effectiveDate) {
     List<Object[]> pairs = Sql.query(
