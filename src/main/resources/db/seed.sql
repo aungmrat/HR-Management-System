@@ -146,6 +146,8 @@ INSERT IGNORE INTO permission (code, module, description) VALUES
   -- Attendance & Roster
   ('ATTENDANCE_VIEW',             'attendance_roster',  'View attendance records'),
   ('SHIFT_VIEW',                  'attendance_roster',  'View shifts'),
+  ('SHIFT_CREATE',                'attendance_roster',  'Create shifts'),
+  ('SHIFT_UPDATE',                'attendance_roster',  'Edit or delete shifts'),
   ('DUTY_ROSTER_VIEW',            'attendance_roster',  'View duty rosters'),
   -- Report
   ('REPORT_VIEW',                 'report',             'View reports'),
