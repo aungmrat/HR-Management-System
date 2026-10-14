@@ -34,6 +34,9 @@ public class ShiftDialog extends javax.swing.JDialog {
   /** Cached team list so the team combo can follow the department choice. */
   private java.util.List<Team> teams = java.util.List.of();
 
+  /** True while fillCombos is populating; suppresses listener side effects. */
+  private boolean combosLoading;
+
   /**
    * Creates new form ShiftDialog
    */
@@ -76,7 +79,11 @@ public class ShiftDialog extends javax.swing.JDialog {
       }
     });
     // Team belongs to one department, so the team list follows the choice.
-    comboDepartment.addActionListener(e -> refillTeams());
+    comboDepartment.addActionListener(e -> {
+      if (!combosLoading) {
+        refillTeams();
+      }
+    });
   }
 
   /** Permission gate for Save; static so headless tests can verify it. */
@@ -113,18 +120,28 @@ public class ShiftDialog extends javax.swing.JDialog {
   private void fillCombos(ComboData data) {
     this.teams = data.teams();
 
-    comboDepartment.removeAllItems();
-    for (Department department : data.departments()) {
-      comboDepartment.addItem(new ComboItem(department.getId(),
-              department.getCode() + " — " + department.getName()));
+    // Block the department listener while the combo is being populated; the
+    // first addItem would otherwise rebuild the team list for whatever item
+    // happens to land first (ORDER BY id DESC — not the user's choice).
+    combosLoading = true;
+    try {
+      comboDepartment.removeAllItems();
+      for (Department department : data.departments()) {
+        comboDepartment.addItem(new ComboItem(department.getId(),
+                department.getCode() + " — " + department.getName()));
+      }
+      if (editing != null) {
+        selectByValue(comboDepartment, editing.getDepartmentId());
+      }
+    } finally {
+      combosLoading = false;
     }
 
-    if (editing == null) {
-      return;
-    }
-    selectByValue(comboDepartment, editing.getDepartmentId());
+    // Rebuild teams for the selected department in BOTH create and edit mode.
     refillTeams();
-    selectByValue(comboTeam, editing.getTeamId());
+    if (editing != null) {
+      selectByValue(comboTeam, editing.getTeamId());
+    }
   }
 
   /**
