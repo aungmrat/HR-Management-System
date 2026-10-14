@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance &amp; Roster — UI/UX + Logic Proposal (Shift · Duty Roster · Attendance)</title>
+<style>
+  :root{
+    --ink:#1b2431; --muted:#5d6b7f; --line:#dbe2ec; --bg:#f4f6fa; --card:#fff;
+    --accent:#2f6fed; --accent-soft:#e8f0ff;
+    --green:#0f9d58; --green-soft:#e6f6ee;
+    --amber:#d97706; --amber-soft:#fef3e2;
+    --red:#d93025; --red-soft:#fdeceb;
+    --blue:#2563eb; --blue-soft:#e8effd;
+    --gray:#6b7280; --gray-soft:#eef1f5;
+    --violet:#7c3aed; --violet-soft:#f1eafd;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
+  h1{font-size:26px;margin:0 0 4px}
+  h2{font-size:20px;margin:40px 0 8px;padding-top:20px;border-top:2px solid var(--line)}
+  h3{font-size:16px;margin:22px 0 6px}
+  p,li{font-size:14.5px;color:#2b3646}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+  table.spec{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff;border-radius:10px;overflow:hidden}
+  table.spec th{background:#eef2f8;text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);font-size:12.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  table.spec td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  table.spec tr:last-child td{border-bottom:none}
+  code{background:var(--gray-soft);padding:1px 6px;border-radius:5px;font-size:12.5px}
+  .tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600}
+  .t-green{background:var(--green-soft);color:var(--green)}
+  .t-amber{background:var(--amber-soft);color:var(--amber)}
+  .t-red{background:var(--red-soft);color:var(--red)}
+  .t-blue{background:var(--blue-soft);color:var(--blue)}
+  .t-gray{background:var(--gray-soft);color:var(--gray)}
+  .t-violet{background:var(--violet-soft);color:var(--violet)}
+  .good{border-left:4px solid var(--green)}
+  .warn{border-left:4px solid var(--amber)}
+  .bad{border-left:4px solid var(--red)}
+  .info{border-left:4px solid var(--accent)}
+  .muted{color:var(--muted);font-size:13px}
+  /* ---------- wireframes ---------- */
+  .wf{background:#fff;border:1.5px solid #b9c4d4;border-radius:10px;padding:12px;font-size:12px}
+  .wf .bar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  .wf .fake-input{border:1px solid #b9c4d4;border-radius:6px;padding:5px 10px;background:#fbfcfe;color:var(--muted);min-width:150px}
+  .wf .btn{border-radius:6px;padding:5px 12px;font-weight:600}
+  .btn-p{background:var(--accent);color:#fff}
+  .btn-g{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .btn-r{background:#fff;border:1px solid #f0b7b2;color:var(--red)}
+  .spacer{flex:1}
+  .kpis{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .kpi{flex:1;min-width:130px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:#fbfcfe}
+  .kpi b{display:block;font-size:18px}
+  .kpi span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  table.mock{width:100%;border-collapse:collapse;font-size:12px}
+  table.mock th{background:#eef2f8;padding:6px 8px;text-align:left;border:1px solid var(--line);color:var(--muted)}
+  table.mock td{padding:6px 8px;border:1px solid var(--line)}
+  /* week grid */
+  table.week{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+  table.week th{background:#eef2f8;padding:6px 4px;border:1px solid var(--line);font-size:11.5px;color:var(--muted)}
+  table.week th.today{background:var(--accent-soft);color:var(--accent)}
+  table.week td{border:1px solid var(--line);padding:5px 4px;height:56px;vertical-align:top;text-align:center}
+  .chip{display:inline-block;border-radius:6px;padding:3px 7px;font-weight:600;font-size:11px}
+  .chip-morn{background:var(--blue-soft);color:var(--blue)}
+  .chip-night{background:var(--violet-soft);color:var(--violet)}
+  .chip-none{color:#b6bfcc;font-weight:400}
+  .legend{display:flex;gap:14px;margin-top:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+  .arrow-flow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13.5px;margin:10px 0}
+  .arrow-flow .step{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-weight:600}
+  .arrow-flow .arr{color:var(--accent);font-weight:700}
+  .phase{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
+  .phase h4{margin:0 0 6px;font-size:14.5px}
+  ul{margin:6px 0;padding-left:22px}
+  .foot{margin-top:44px;padding-top:14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Attendance &amp; Roster — UI/UX + Logic Proposal</h1>
+<div class="sub">Three connected tables: <code>shift</code> (definition) → <code>duty_roster</code> (plan) → <code>attendance</code> (actual). Menu group <b>Attendance&amp;Roster</b>: Shift (done), Attendance, Duty Roster.</div>
+
+<div class="card info">
+  <b>Core idea — “Plan vs Actual”</b>
+  <div class="arrow-flow">
+    <span class="step">Shift</span><span class="arr">→</span>
+    <span class="step">Duty Roster <i style="font-weight:400;color:var(--muted)">(who works when)</i></span><span class="arr">→</span>
+    <span class="step">Attendance <i style="font-weight:400;color:var(--muted)">(who actually worked)</i></span><span class="arr">→</span>
+    <span class="step">Compare → Missed shifts, late minutes, overtime</span>
+  </div>
+  <p class="muted" style="margin:6px 0 0">Every screen answers one question: <b>Shift</b> = “what shifts exist?”, <b>Roster</b> = “who is scheduled this week?”, <b>Attendance</b> = “what happened today / this month?”.</p>
+</div>
+
+<!-- ================================================================ -->
+<h2>1. Shift (already built) — small polish only</h2>
+<div class="card">
+  <table class="spec">
+    <tr><th>Item</th><th>Suggestion</th></tr>
+    <tr><td>Table columns (done)</td><td>ID · Code · Department · Team · Start · End · Overnight · Remark</td></tr>
+    <tr><td>Extra column</td><td><b>Duration</b> — computed in <code>toTableRow()</code> (<code>end−start</code>, +24h if overnight → <code>8h 30m</code>). Pure display, no DB change.</td></tr>
+    <tr><td>Overnight cell</td><td><code>Yes</code> → violet badge (needs <code>OVERNIGHT</code> entry in <code>StatusBadge</code> map); Start/End keep plain time.</td></tr>
+    <tr><td>Useful counts</td><td>Optional “Rostered this week: N staff” in footer — skip in v1.</td></tr>
+  </table>
+</div>
+
+<!-- ================================================================ -->
+<h2>2. Duty Roster — week grid (the hero screen)</h2>
+
+<h3>2.1 Why a grid, not a flat table</h3>
+<p>Roster is a <b>calendar problem</b> (staff × 7 days). A flat table makes you scan rows to see one week; a week grid shows the whole plan in one glance and makes double-booking visible instantly. Keep a flat table as a <b>second tab</b> for filtering/export.</p>
+
+<h3>2.2 Layout — Week view (default tab)</h3>
+<div class="wf">
+  <div class="bar">
+    <span class="btn btn-g">◀</span><b>05 – 11 Oct 2026</b><span class="btn btn-g">▶</span>
+    <span class="btn btn-p" style="background:#16a34a">Today</span>
+    <span class="fake-input">Department: All ▾</span>
+    <span class="fake-input" style="min-width:170px">Search staff…</span>
+    <span class="spacer"></span>
+    <span class="btn btn-g">Auto-fill week…</span>
+    <span class="btn btn-p">+ Assign Shift</span>
+  </div>
+  <table class="week">
+    <tr><th style="width:20%">Staff \ Day</th><th>Mon 05</th><th>Tue 06</th><th>Wed 07</th><th class="today">Thu 08</th><th>Fri 09</th><th>Sat 10</th><th>Sun 11</th></tr>
+    <tr><td style="text-align:left"><b>EMP-003</b><br><span class="muted">Dept of Technology</span></td>
+      <td><span class="chip chip-morn">MORN 09–17</span></td>
+      <td><span class="chip chip-morn">MORN 09–17</span></td>
+      <td><span class="chip chip-none">—</span></td>
+      <td><span class="chip chip-morn">MORN 09–17</span></td>
+      <td><span class="chip chip-morn">MORN 09–17</span></td>
+      <td><span class="chip chip-night">NIGHT 22–06 ☾</span></td>
+      <td><span class="chip chip-none">—</span></td></tr>
+    <tr><td style="text-align:left"><b>EMP-014</b><br><span class="muted">Dept of Technology</span></td>
+      <td><span class="chip chip-night">NIGHT 22–06 ☾</span></td>
+      <td><span class="chip chip-none">—</span></td>
+      <td><span class="chip chip-morn">MORN 09–17</span></td>
+      <td><span class="chip chip-morn">MORN 09–17</span></td>
+      <td><span class="chip chip-none">—</span></td>
+      <td><span class="chip chip-none">—</span></td>
+      <td><span class="chip chip-morn">MORN 09–17</span></td></tr>
+  </table>
+  <div class="legend">
+    <span><span class="chip chip-morn">MORN 09–17</span> day shift</span>
+    <span><span class="chip chip-night">NIGHT 22–06 ☾</span> overnight (spans midnight — displayed on its <b>start</b> date)</span>
+    <span><span class="chip chip-none">—</span> empty → click to assign</span>
+    <span style="color:var(--red)">red outline = conflict</span>
+  </div>
+</div>
+
+<h3>2.3 Interactions (Swing-friendly — no drag &amp; drop)</h3>
+<table class="spec">
+  <tr><th>Action</th><th>Behaviour</th></tr>
+  <tr><td>Click empty cell</td><td>Quick dialog: staff + date fixed (shown read-only), <b>shift dropdown</b> (code — time window), remark → Save. One click away from filled.</td></tr>
+  <tr><td>Click existing chip</td><td>Popup menu: <b>Change shift…</b> · <b>Remove</b> (soft delete, confirm) · <b>Details</b> (remark, created by/date).</td></tr>
+  <tr><td>Auto-fill week…</td><td>Batch dialog: department or hand-pick staff list + shift + weekday checkboxes (Mon–Sun) + optional “skip days already assigned”. Generates rows in one background loop; unique key <code>(shift_id, roster_date, staff_id)</code> skips duplicates; result toast: “Added 18 assignments, skipped 3 duplicates”.</td></tr>
+  <tr><td>◀ ▶ / Today</td><td>Switch week (Mon-start — Myanmar work week). Loads rows for the visible range only.</td></tr>
+  <tr><td>Table tab (2nd)</td><td>Same data as flat HrmsTable: ID · Staff · Date · Shift · Status · Remark, with date-range/status filters — for export and bulk delete.</td></tr>
+</table>
+
+<h3>2.4 Cell &amp; status logic</h3>
+<div class="card">
+  <ul>
+    <li><b>Stored status</b> (<code>duty_roster.status</code>, default <code>Scheduled</code>): keep writes minimal — only <code>Scheduled</code> and <code>Cancelled</code> are user-set.</li>
+    <li><b>Derived display state</b> (computed at load, colored chip — no DB column needed):
+      <span class="tag t-blue">Scheduled</span> future date ·
+      <span class="tag t-green">Completed</span> past date <i>and</i> attendance row exists ·
+      <span class="tag t-red">Missed</span> past date <i>and</i> no attendance ·
+      <span class="tag t-gray">Cancelled</span>.
+      (Join against <code>attendance</code> on <code>staff_id + date</code> in the roster query.)</li>
+    <li><b>Overnight shift</b>: chip shows ☾ and is drawn on the <b>start</b> date only; tooltip shows “22:00 → 06:00 (+1 day)”.</li>
+  </ul>
+</div>
+
+<h3>2.5 Validation rules (the important part)</h3>
+<table class="spec">
+  <tr><th>#</th><th>Rule</th><th>Why</th></tr>
+  <tr><td>R1</td><td>Reject the <b>same shift + date + staff</b> twice</td><td>DB unique key — show friendly “Already assigned” instead of SQL error.</td></tr>
+  <tr><td>R2</td><td><b>Warn</b> (confirm dialog) when the staff already has <b>any other shift</b> on that date</td><td>Unique key does <b>not</b> prevent double-booking across two shifts — UI must.</td></tr>
+  <tr><td>R3</td><td>Only non-deleted shifts offered; staff picker = active staff of the filtered department</td><td>Match house pattern (combo from DB, never hardcoded).</td></tr>
+  <tr><td>R4</td><td>Remove = soft delete, confirm text names staff + date + shift code</td><td>Same as Shift panel delete.</td></tr>
+  <tr><td>R5</td><td>Batch fill = “skip existing”, never overwrite</td><td>Safe re-run; no surprise clobbering.</td></tr>
+</table>
+
+<!-- ================================================================ -->
+<h2>3. Attendance — list + KPI chips + monthly view</h2>
+
+<h3>3.1 Layout — main panel</h3>
+<div class="wf">
+  <div class="kpis">
+    <div class="kpi"><b style="color:var(--green)">142</b><span>Present (08 Oct)</span></div>
+    <div class="kpi"><b style="color:var(--red)">7</b><span>Absent</span></div>
+    <div class="kpi"><b style="color:var(--amber)">5</b><span>On leave</span></div>
+    <div class="kpi"><b style="color:var(--violet)">3</b><span>Half day</span></div>
+    <div class="kpi"><b style="color:var(--accent)">126.5h</b><span>Total hours</span></div>
+  </div>
+  <div class="bar">
+    <span class="fake-input" style="color:var(--ink)">📅 08 Oct 2026 (JDateChooser)</span>
+    <span class="fake-input">Status: All ▾</span>
+    <span class="fake-input">Dept: All ▾</span>
+    <span class="fake-input">Search staff…</span>
+    <span class="spacer"></span>
+    <span class="btn btn-g">Monthly view…</span>
+    <span class="btn btn-r">Export CSV</span>
+    <span class="btn btn-p">+ New Attendance</span>
+  </div>
+  <table class="mock">
+    <tr><th>ID</th><th>Staff</th><th>Date</th><th>Shift</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th><th>Remark</th></tr>
+    <tr><td>12</td><td>EMP-003 — Staff Test</td><td>08 Oct</td><td>MORN 09–17</td><td>08:52</td><td>17:04</td><td>8.20</td><td><span class="tag t-green">PRESENT</span></td><td></td></tr>
+    <tr><td>11</td><td>EMP-014 — Kyaw Z.</td><td>08 Oct</td><td>NIGHT 22–06</td><td>22:10</td><td>06:02</td><td>7.87</td><td><span class="tag t-violet">OVERTIME</span></td><td>overtime +30m</td></tr>
+    <tr><td>10</td><td>EMP-021 — Aye M.</td><td>08 Oct</td><td>—</td><td>—</td><td>—</td><td>0.00</td><td><span class="tag t-gray">LEAVE</span></td><td>AL approved</td></tr>
+    <tr><td>09</td><td>EMP-030 — Thu P.</td><td>08 Oct</td><td>MORN 09–17</td><td>—</td><td>—</td><td>0.00</td><td><span class="tag t-red">ABSENT</span></td><td></td></tr>
+  </table>
+</div>
+<p class="muted">Header date controls the default filter (day view). Clearing it lists a range (default: current month). KPI chips are computed in the same query — click a chip to filter by that status.</p>
+
+<h3>3.2 Add / Edit dialog</h3>
+<table class="spec">
+  <tr><th>Field</th><th>Behaviour</th></tr>
+  <tr><td>Staff</td><td>ComboItem, role-aware like LeaveApplication (<code>STAFF_VIEW</code> → any staff, else only self). Edit mode = disabled.</td></tr>
+  <tr><td>Date</td><td>JDateChooser. <b>Unique per staff</b> → friendly “Attendance for this staff on this date already exists”.</td></tr>
+  <tr><td>Shift</td><td>ComboItem filtered to shifts whose window is valid on that date; shows <code>code — HH:mm–HH:mm</code>. Default = the staff’s <b>roster row</b> for that date (auto-pick — the two tables talk to each other).</td></tr>
+  <tr><td>Time In / Out</td><td><code>JSpinner</code> HH:mm (or plain text + strict parse). Overnight detected automatically when out ≤ in.</td></tr>
+  <tr><td>Total hours</td><td><b>Auto-computed, read-only label</b> (out − in, +24h overnight, 2 dp). Never hand-typed → no arithmetic errors.</td></tr>
+  <tr><td>Status</td><td>Auto-<b>suggested</b>, user-overridable (see rules below).</td></tr>
+  <tr><td>Remark</td><td>Required when <b>editing an existing</b> row (audit trail: “why was it corrected?”). Optional on create.</td></tr>
+</table>
+
+<h3>3.3 Status rules (auto-suggest, manual override allowed)</h3>
+<table class="spec">
+  <tr><th>Condition</th><th>Suggested status</th><th>Badge</th></tr>
+  <tr><td>No roster row, times present</td><td><code>PRESENT</code></td><td><span class="tag t-green">PRESENT</span></td></tr>
+  <tr><td>Rostered + approved leave covers date</td><td><code>LEAVE</code> (time in/out = 00:00, hours 0)</td><td><span class="tag t-gray">LEAVE</span></td></tr>
+  <tr><td>No show (rostered, times blank)</td><td><code>ABSENT</code></td><td><span class="tag t-red">ABSENT</span></td></tr>
+  <tr><td>times span the overnight shift</td><td><code>OVERTIME</code> when total &gt; scheduled, else <code>PRESENT</code></td><td><span class="tag t-violet">OVERTIME</span></td></tr>
+  <tr><td>half-day requested</td><td><code>HALF_DAY_AM</code> / <code>HALF_DAY_PM</code></td><td><span class="tag t-amber">HALF DAY</span></td></tr>
+  <tr><td><b>hard fields</b> NOT NULL</td><td colspan="2">For ABSENT/LEAVE store <code>00:00</code>–<code>00:00</code> and <code>0</code> hours — keeps schema untouched.</td></tr>
+</table>
+<p class="muted"><b>Lateness:</b> the CHECK list has no <code>LATE</code> value — so do <b>not</b> invent one. Compute “late minutes” (= time_in − shift.start, overnight-aware, optional 10-min grace) and show it as an <b>info tooltip / amber text in the Hours cell</b> (“+12m late”). That matches the reference project’s calculator without schema changes.</p>
+
+<h3>3.4 Monthly view dialog (biggest UX win)</h3>
+<div class="wf">
+  <div class="bar"><span class="btn btn-g">◀</span><b>October 2026 — EMP-003</b><span class="btn btn-g">▶</span><span class="spacer"></span><span class="btn btn-g">Print</span></div>
+  <table class="mock" style="text-align:center">
+    <tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
+    <tr><td colspan="4"></td><td><span class="tag t-green">1 ✓</span><br><span class="muted">8.2h</span></td><td><span class="tag t-green">2 ✓</span><br><span class="muted">8.0h</span></td><td><span class="tag t-gray">3 OFF</span></td><td><span class="tag t-gray">4 OFF</span></td></tr>
+    <tr><td><span class="tag t-green">5 ✓</span><br><span class="muted">8.1h</span></td><td><span class="tag t-amber">6 ▲</span><br><span class="muted">4.0h half</span></td><td><span class="tag t-red">7 ✗</span></td><td><span class="tag t-green">8 ✓</span><br><span class="muted">8.2h</span></td><td><span class="tag t-green">9 ✓</span><br><span class="muted">8.0h</span></td><td><span class="tag t-violet">10 ☾</span><br><span class="muted">7.9h</span></td><td><span class="tag t-gray">11 OFF</span></td></tr>
+    <tr><td colspan="7" style="text-align:left;background:#fbfcfe"><b>Summary:</b> Present 18 · Half day 1 · Absent 1 · Leave 2 · Hours 146.3 · Late days 4</td></tr>
+  </table>
+</div>
+<ul>
+  <li>Opened from the “Monthly view…” button (all staff, dropdown) or <b>double-click a staff row</b> in day view.</li>
+  <li>Cells colored by status badge colors — one glance shows the month’s pattern (red clusters = discipline issues).</li>
+  <li>Read-only in v1; a cell double-click jumps back to the main list filtered on that date.</li>
+</ul>
+
+<h3>3.5 Attendance validation rules</h3>
+<table class="spec">
+  <tr><th>#</th><th>Rule</th></tr>
+  <tr><td>A1</td><td>Unique <code>(staff_id, date)</code> → friendly duplicate message (DB unique key already enforces).</td></tr>
+  <tr><td>A2</td><td>Time format strict <code>HH:mm</code>; out may be ≤ in <b>only</b> when the selected shift is overnight (mirrors data reality; total hours auto +24h).</td></tr>
+  <tr><td>A3</td><td>Hours always computed — user never types it.</td></tr>
+  <tr><td>A4</td><td>Delete = soft delete; bulk delete from table context menu with confirm listing count.</td></tr>
+  <tr><td>A5</td><td>Edit after month close (payroll) — Phase 3: require remark + <code>ATTENDANCE_UPDATE</code>; log via <code>modified_by/date</code>.</td></tr>
+</table>
+
+<!-- ================================================================ -->
+<h2>4. Cross-cutting (permissions, badges, patterns)</h2>
+<div class="grid2">
+  <div class="card">
+    <h3 style="margin-top:0">New permissions (seed + live DB)</h3>
+    <table class="spec">
+      <tr><th>Code</th><th>Gates</th></tr>
+      <tr><td><code>ATTENDANCE_CREATE</code></td><td>New Attendance button</td></tr>
+      <tr><td><code>ATTENDANCE_UPDATE</code></td><td>Edit / delete attendance</td></tr>
+      <tr><td><code>DUTY_ROSTER_CREATE</code></td><td>Assign / auto-fill</td></tr>
+      <tr><td><code>DUTY_ROSTER_UPDATE</code></td><td>Change / remove assignments</td></tr>
+    </table>
+    <p class="muted">View codes already exist (<code>ATTENDANCE_VIEW</code>, <code>DUTY_ROSTER_VIEW</code>) and are granted to HR_ADMIN + MANAGER.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">StatusBadge map additions</h3>
+    <table class="spec">
+      <tr><th>Value</th><th>Role</th></tr>
+      <tr><td><code>OVERTIME</code></td><td>VIOLET (or WARNING — amber)</td></tr>
+      <tr><td><code>OVERNIGHT</code></td><td>VIOLET</td></tr>
+      <tr><td><code>MISSIGNED</code>/<code>MISSING</code> (derived)</td><td>DANGER</td></tr>
+      <tr><td colspan="2" class="muted">PRESENT/ABSENT/LEAVE/HALF_DAY_*/SCHEDULED/CANCELLED already mapped ✓</td></tr>
+    </table>
+  </div>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">House patterns reused (no new inventions)</h3>
+  <ul>
+    <li>HrmsTable outside GEN + ErrorPanel retry + <code>UiThread.executeAsync</code> + slf4j LOG — same as Leave/Shift panels.</li>
+    <li>ComboItem record for staff/shift/department combos; SearchField debounce; dual-ctor dialogs; <code>ValidationException</code> list.</li>
+    <li>Bad status colors come from existing <code>StatusBadge.cellRenderer()</code> via <code>badgeColumn(i)</code>.</li>
+    <li>Frame owner + <code>setLocationRelativeTo</code> for dialogs; buttons gated by permission with tooltip “Requires permission: X”.</li>
+  </ul>
+</div>
+
+<!-- ================================================================ -->
+<h2>5. Build order (phases)</h2>
+<div class="phase">
+  <h4>Phase 1 — Attendance (read + write core)</h4>
+  <ul>
+    <li>Permissions <code>ATTENDANCE_CREATE/UPDATE</code> (enum + seed + live DB)</li>
+    <li><code>AttendanceRepository</code> (list by date-range with staff/shift join, findById, insert, update, softDelete, KPI counts query, <code>exists(staff,date)</code>)</li>
+    <li><code>AttendanceDialog</code> (auto hours, auto status suggest, roster default shift)</li>
+    <li>Panel: KPI chips + date/status/dept filters + table + context menu; wire <code>attendance</code> card</li>
+  </ul>
+</div>
+<div class="phase">
+  <h4>Phase 2 — Duty Roster (week grid)</h4>
+  <ul>
+    <li>Permissions <code>DUTY_ROSTER_CREATE/UPDATE</code>; <code>DutyRosterRepository</code> (rows in week range + derived state join)</li>
+    <li>Panel: JTable-based week grid (7 day-columns, staff rows) — plain Swing, no custom painting needed; quick-assign dialog + change/remove popup</li>
+    <li>Auto-fill week batch dialog with skip-existing + result toast</li>
+    <li>Second tab: flat table view</li>
+  </ul>
+</div>
+<div class="phase">
+  <h4>Phase 3 — “Plan vs Actual” polish</h4>
+  <ul>
+    <li>Monthly attendance view dialog; late-minutes tooltip; CSV export</li>
+    <li>Roster chips: Completed/Missed derived states; “Generate attendance (ABSENT) from past roster” utility</li>
+    <li>Dashboard tiles: today’s present/absent, roster coverage %</li>
+  </ul>
+</div>
+
+<div class="foot">
+  Reference sources: local schema (<code>hr</code> DB: shift / attendance / duty_roster CHECK keys, unique keys) ·
+  reference project <code>D:\projects\HR Management</code> (AttendanceCalculator grace/overnight logic, MonthlyViewDialog, ShiftPanel) ·
+  house UI conventions (HrmsTable, StatusBadge, ComboItem, ErrorPanel).
+</div>
+
+</div>
+</body>
+</html>

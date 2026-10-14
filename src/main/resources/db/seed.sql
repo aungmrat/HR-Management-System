@@ -145,10 +145,14 @@ INSERT IGNORE INTO permission (code, module, description) VALUES
   ('PAYSLIP_VIEW',                'payroll_compensation', 'View payslips'),
   -- Attendance & Roster
   ('ATTENDANCE_VIEW',             'attendance_roster',  'View attendance records'),
+  ('ATTENDANCE_CREATE',           'attendance_roster',  'Create attendance records'),
+  ('ATTENDANCE_UPDATE',           'attendance_roster',  'Edit or delete attendance records'),
   ('SHIFT_VIEW',                  'attendance_roster',  'View shifts'),
   ('SHIFT_CREATE',                'attendance_roster',  'Create shifts'),
   ('SHIFT_UPDATE',                'attendance_roster',  'Edit or delete shifts'),
   ('DUTY_ROSTER_VIEW',            'attendance_roster',  'View duty rosters'),
+  ('DUTY_ROSTER_CREATE',          'attendance_roster',  'Assign duty rosters'),
+  ('DUTY_ROSTER_UPDATE',          'attendance_roster',  'Edit or remove duty rosters'),
   -- Report
   ('REPORT_VIEW',                 'report',             'View reports'),
   -- System

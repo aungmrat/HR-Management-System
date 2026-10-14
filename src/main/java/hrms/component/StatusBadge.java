@@ -123,9 +123,12 @@ public class StatusBadge extends JComponent {
                 Map.entry("SCHEDULED", Role.INFO), Map.entry("LATE", Role.WARNING),
                 Map.entry("LEAVE", Role.INFO), Map.entry("HOLIDAY", Role.INFO),
                 Map.entry("WEEKEND", Role.TEXT_MUTED), Map.entry("HALF_DAY", Role.WARNING),
+                Map.entry("HALF_DAY_AM", Role.WARNING), Map.entry("HALF_DAY_PM", Role.WARNING),
                 Map.entry("EARLY_LEAVE", Role.WARNING), Map.entry("MISSION", Role.INFO),
                 Map.entry("RESIGNED", Role.WARNING), Map.entry("RETIRED", Role.INFO),
                 Map.entry("UNDER_REPAIR", Role.WARNING), Map.entry("ATTENDED", Role.INFO),
+                Map.entry("OVERTIME", Role.SUCCESS), Map.entry("OVERNIGHT", Role.INFO),
+                Map.entry("MISSED", Role.DANGER), Map.entry("MISSING", Role.DANGER),
                 // Notification types (spec section 41)
                 Map.entry("INFO", Role.INFO), Map.entry("WARNING", Role.WARNING),
                 Map.entry("SUCCESS", Role.SUCCESS), Map.entry("ERROR", Role.DANGER),
