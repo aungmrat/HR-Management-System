@@ -3,6 +3,7 @@ package hrms.repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -278,6 +279,8 @@ public final class DutyRosterRepository {
                         TIME_FORMAT(sh.start_time, '%H:%i'), '-',
                         TIME_FORMAT(sh.end_time, '%H:%i'),
                         IF(sh.is_overnight, ' +1', '')) AS shift_label,
+                 sh.is_overnight AS shift_overnight,
+                 sh.start_time AS shift_start_time,
                  a.status AS attendance_status
             FROM duty_roster dr
             JOIN staff s ON s.id = dr.staff_id
@@ -301,6 +304,8 @@ public final class DutyRosterRepository {
     roster.setCreatedBy(rs.wasNull() ? null : createdBy);
     roster.setStaffName(rs.getString("staff_name"));
     roster.setShiftLabel(rs.getString("shift_label"));
+    roster.setOvernight(rs.getBoolean("shift_overnight"));
+    roster.setShiftStartTime(rs.getObject("shift_start_time", LocalTime.class));
     roster.setAttendanceStatus(rs.getString("attendance_status"));
     return roster;
   }

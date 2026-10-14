@@ -20,6 +20,8 @@ public class DutyRoster {
   // Display-only fields filled by the repository JOIN (not persisted columns).
   private String staffName;
   private String shiftLabel;
+  private boolean shiftOvernight;
+  private java.time.LocalTime shiftStartTime;
   /** Attendance status for the same staff+date, when a record exists. */
   private String attendanceStatus;
 
@@ -152,6 +154,37 @@ public class DutyRoster {
 
   public void setShiftLabel(String shiftLabel) {
     this.shiftLabel = shiftLabel;
+  }
+
+  public boolean isOvernight() {
+    return shiftOvernight;
+  }
+
+  public void setOvernight(boolean shiftOvernight) {
+    this.shiftOvernight = shiftOvernight;
+  }
+
+  public java.time.LocalTime getShiftStartTime() {
+    return shiftStartTime;
+  }
+
+  public void setShiftStartTime(java.time.LocalTime shiftStartTime) {
+    this.shiftStartTime = shiftStartTime;
+  }
+
+  /**
+   * Time-of-day band of the shift, used by the week grid to tint chips:
+   * Night when the shift runs overnight, AM when it starts before noon,
+   * otherwise PM. Derived from times, not from the shift code text.
+   */
+  public String shiftBand() {
+    if (shiftOvernight) {
+      return "NIGHT";
+    }
+    if (shiftStartTime != null && shiftStartTime.getHour() < 12) {
+      return "AM";
+    }
+    return "PM";
   }
 
   public String getAttendanceStatus() {

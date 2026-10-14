@@ -243,8 +243,12 @@ public class DutyRoster extends javax.swing.JPanel {
   // Tables
   // ------------------------------------------------------------------
 
-  /** Week grid chip: shift code + derived state painted like StatusBadge. */
-  private record CellChip(String code, String state, String tooltip) {
+  /**
+   * Week grid chip: shift code + derived state painted like StatusBadge.
+   * {@code bgRole} tints the cell background — the shift band (AM/PM/Night)
+   * for normal states, or the alarm color when the state needs attention.
+   */
+  private record CellChip(String code, String state, String tooltip, Role bgRole) {
   }
 
   /** Replaces the GEN placeholder JTable on the Table tab (same pattern as Shift). */
@@ -447,7 +451,7 @@ public class DutyRoster extends javax.swing.JPanel {
               ? "" : roster.getShiftLabel().split(" ")[0];
           String state = roster.displayState();
           String tooltip = roster.getShiftLabel() + " — " + state;
-          row[day + 1] = new CellChip(code, state, tooltip);
+          row[day + 1] = new CellChip(code, state, tooltip, chipBackground(state, roster));
         }
       }
       model.addRow(row);
@@ -458,6 +462,23 @@ public class DutyRoster extends javax.swing.JPanel {
     for (int day = 1; day <= 7; day++) {
       tableWeek.getColumnModel().getColumn(day).setPreferredWidth(100);
     }
+  }
+
+  /**
+   * Background role for a week-grid chip: alarm states (Missed/Absent) stay
+   * red and Leave stays blue so problems read at a glance; otherwise the
+   * shift band tints the cell (amber = AM, teal = PM, indigo = Night).
+   */
+  static Role chipBackground(String state, hrms.model.DutyRoster roster) {
+    return switch (state) {
+      case "Missed", "Absent" -> Role.DANGER;
+      case "Leave" -> Role.INFO;
+      default -> switch (roster.shiftBand()) {
+        case "AM" -> Role.WARNING;
+        case "NIGHT" -> Role.ACCENT;
+        default -> Role.INFO;
+      };
+    };
   }
 
   private void fillListTable() {
@@ -503,19 +524,26 @@ public class DutyRoster extends javax.swing.JPanel {
         label.setToolTipText(chip.tooltip());
         label.setHorizontalAlignment(SwingConstants.CENTER);
         label.setOpaque(true);
-        Role role = StatusBadge.roleFor(chip.state());
-        Color semantic = Palette.color(role);
+        Role stateRole = StatusBadge.roleFor(chip.state());
+        Color stateColor = Palette.color(stateRole);
+        Color chipBg = Palette.color(chip.bgRole());
         if (isSelected) {
-          label.setBackground(table.getSelectionBackground());
-          label.setForeground(semantic);
+          // Keep a hint of the chip color but anchor to the selection colors
+          // so the text stays readable (semantic red on accent blue did not).
+          label.setBackground(UiGraphics.blend(
+              table.getSelectionBackground(), chipBg, 0.30));
+          label.setForeground(table.getSelectionForeground());
         } else {
           label.setBackground(UiGraphics.blend(
-              Palette.color(Role.CARD_BG), semantic, 0.14));
-          label.setForeground(semantic);
+              Palette.color(Role.CARD_BG), chipBg, 0.14));
+          label.setForeground(stateColor);
         }
       } else {
-        label.setText("");
+        // Plain-text cells (Staff column): show the value and reset the
+        // CENTER alignment the chip branch sets on this shared renderer.
+        label.setText(value == null ? "" : value.toString());
         label.setToolTipText(null);
+        label.setHorizontalAlignment(SwingConstants.LEFT);
         label.setOpaque(true);
         label.setBackground(isSelected ? table.getSelectionBackground()
             : table.getBackground());
