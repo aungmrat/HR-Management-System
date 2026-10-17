@@ -119,8 +119,8 @@ public class MainFrame extends javax.swing.JFrame {
                   "military_service", "family_member", "overtime_policy",
                   "benefit", "allowance", "salary_rate", "tax",
                   "leave_type", "leave_entitlement", "leave_application",
-                  "leave_approval", "leave_history", "attendance", "shift",
-                  "duty_roster");
+          "leave_approval", "leave_history", "attendance", "shift",
+          "duty_roster", "gazetted_holiday", "holiday_calendar");
 
   /**
    * Cards that expose {@code refreshTable()}; invoked on navigation so a screen
@@ -203,6 +203,10 @@ public class MainFrame extends javax.swing.JFrame {
             new hrms.ui.leavemanagement.LeaveApproval();
     hrms.ui.leavemanagement.LeaveHistory leaveHistoryPanel =
             new hrms.ui.leavemanagement.LeaveHistory();
+    hrms.ui.leavemanagement.GazettedHoliday gazettedHolidayPanel =
+            new hrms.ui.leavemanagement.GazettedHoliday();
+    hrms.ui.leavemanagement.HolidayCalendar holidayCalendarPanel =
+            new hrms.ui.leavemanagement.HolidayCalendar();
     hrms.ui.attendanceandroster.Attendance attendancePanel =
             new hrms.ui.attendanceandroster.Attendance();
     hrms.ui.attendanceandroster.Shift shiftPanel =
@@ -230,6 +234,8 @@ public class MainFrame extends javax.swing.JFrame {
     content_panel.add(leaveApplicationPanel, "leave_application");
     content_panel.add(leaveApprovalPanel, "leave_approval");
     content_panel.add(leaveHistoryPanel, "leave_history");
+    content_panel.add(gazettedHolidayPanel, "gazetted_holiday");
+    content_panel.add(holidayCalendarPanel, "holiday_calendar");
     content_panel.add(attendancePanel, "attendance");
     content_panel.add(shiftPanel, "shift");
     content_panel.add(dutyRosterPanel, "duty_roster");
@@ -254,6 +260,8 @@ public class MainFrame extends javax.swing.JFrame {
     refreshers.put("leave_application", leaveApplicationPanel::refreshTable);
     refreshers.put("leave_approval", leaveApprovalPanel::refreshTable);
     refreshers.put("leave_history", leaveHistoryPanel::refreshTable);
+    refreshers.put("gazetted_holiday", gazettedHolidayPanel::refreshTable);
+    refreshers.put("holiday_calendar", holidayCalendarPanel::refreshTable);
     refreshers.put("attendance", attendancePanel::refreshTable);
     refreshers.put("shift", shiftPanel::refreshTable);
     refreshers.put("duty_roster", dutyRosterPanel::refreshTable);
@@ -688,11 +696,13 @@ public class MainFrame extends javax.swing.JFrame {
 
     menu_icon.setPreferredSize(new java.awt.Dimension(40, 20));
     menu_icon.addActionListener(this::menu_iconActionPerformed);
-    left.add(menu_icon, new java.awt.GridBagConstraints());
+    gridBagConstraints = new java.awt.GridBagConstraints();
+    gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 82);
+    left.add(menu_icon, gridBagConstraints);
 
     hrms.setText("HRMS  ");
     gridBagConstraints = new java.awt.GridBagConstraints();
-    gridBagConstraints.insets = new java.awt.Insets(0, 24, 0, 9);
+    gridBagConstraints.insets = new java.awt.Insets(0, 3, 0, 8);
     left.add(hrms, gridBagConstraints);
 
     header_panel.add(left, java.awt.BorderLayout.LINE_START);
