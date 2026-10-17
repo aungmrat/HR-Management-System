@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 import hrms.exception.BusinessException;
+import hrms.model.Attendance;
 import hrms.model.LeaveApplication;
 
 /**
@@ -212,6 +213,66 @@ public final class LeaveApplicationRepository {
               + "then approve again.");
     }
     insertHistory(id, "APPROVE", "PENDING", "APPROVED", approverStaffId, null);
+    recordLeaveAttendance(application, approverUserId);
+  }
+
+  /**
+   * Approval hook: creates LEAVE (or HALF_DAY) attendance rows for the
+   * approved range. Saturday/Sunday are skipped (business days only); a day
+   * that already has a punch or a LEAVE row is skipped (punch wins /
+   * idempotent), and an ABSENT row without punches flips to the leave status.
+   */
+  private static void recordLeaveAttendance(LeaveApplication application, Long userId) {
+    long staffId = application.getStaffId();
+    if (application.isHalfDay()) {
+      LocalDate date = application.getFromDate();
+      if (!isWeekend(date)) {
+        String status = "PM".equalsIgnoreCase(application.getHalfDayPeriod())
+                ? "HALF_DAY_PM" : "HALF_DAY_AM";
+        upsertLeaveRow(staffId, date, status, userId);
+      }
+      return;
+    }
+    LocalDate from = application.getFromDate();
+    LocalDate to = application.getToDate();
+    for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
+      if (!isWeekend(date)) {
+        upsertLeaveRow(staffId, date, "LEAVE", userId);
+      }
+    }
+  }
+
+  private static boolean isWeekend(LocalDate date) {
+    java.time.DayOfWeek day = date.getDayOfWeek();
+    return day == java.time.DayOfWeek.SATURDAY || day == java.time.DayOfWeek.SUNDAY;
+  }
+
+  /** One day of the approval hook (see {@link #recordLeaveAttendance}). */
+  private static void upsertLeaveRow(long staffId, LocalDate date, String status,
+          Long userId) {
+    Optional<Attendance> found = AttendanceRepository.findByStaffDate(staffId, date);
+    if (found.isPresent()) {
+      Attendance attendance = found.get();
+      if (!attendance.getPunches().isEmpty()
+              || !"ABSENT".equals(attendance.getStatus())) {
+        return; // punch wins; LEAVE/HALF_DAY rows are idempotent
+      }
+      attendance.setStatus(status);
+      attendance.setRemark("Approved leave");
+      attendance.setModifiedBy(userId);
+      AttendanceRepository.update(attendance);
+      return;
+    }
+    DutyRosterRepository.RosterRef roster =
+            DutyRosterRepository.findRosterFor(staffId, date).orElse(null);
+    Attendance attendance = Attendance.create(staffId, date,
+            roster == null ? 0L : roster.shiftId(),
+            java.time.LocalTime.MIDNIGHT, java.time.LocalTime.MIDNIGHT,
+            BigDecimal.ZERO, status, "Approved leave", userId);
+    if (roster != null) {
+      attendance.setRosterId(roster.rosterId());
+    }
+    AttendanceRepository.insert(attendance);
   }
 
   /**

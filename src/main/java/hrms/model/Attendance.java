@@ -1,8 +1,13 @@
 package hrms.model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Attendance entity mapped from the {@code attendance} table.
@@ -11,11 +16,13 @@ public class Attendance {
 
   private long id;
   private long staffId;
+  private Long rosterId;
   private LocalDate date;
   private long shiftId;
   private LocalTime timeIn;
   private LocalTime timeOut;
-  private BigDecimal totalHours;
+  private BigDecimal totalHours = BigDecimal.ZERO;
+  private BigDecimal overtimeHours = BigDecimal.ZERO;
   private String status;
   private String remark;
   private Long createdBy;
@@ -24,6 +31,12 @@ public class Attendance {
   // Display-only fields filled by the repository JOIN (not persisted columns).
   private String staffName;
   private String shiftLabel;
+  private long punchCount;
+  private LocalTime firstIn;
+  private LocalTime lastOut;
+
+  /** Ordered IN/OUT punches backing timeIn/timeOut/totalHours. */
+  private List<LocalTime> punches = new ArrayList<>();
 
   public Attendance() {
   }
@@ -47,17 +60,20 @@ public class Attendance {
 
   /**
    * Row shape expected by {@code HrmsTable}:
-   * ID, Staff, Date, Shift, Time In, Time Out, Total Hours, Status, Remark.
+   * ID, Staff, Date, Shift, Punches, First In, Last Out, Hours, OT, Status, Remark.
+   * First In / Last Out show an em dash when no punch exists (ABSENT/LEAVE).
    */
   public Object[] toTableRow() {
     return new Object[]{
       id,
       staffName == null ? "" : staffName,
       date == null ? "" : date.toString(),
-      shiftLabel == null ? "" : shiftLabel,
-      timeIn == null ? "" : timeIn.toString(),
-      timeOut == null ? "" : timeOut.toString(),
+      shiftLabel == null || shiftLabel.isBlank() ? "—" : shiftLabel,
+      punchCount,
+      firstIn == null ? "—" : firstIn.toString(),
+      lastOut == null ? "—" : lastOut.toString(),
       totalHours == null ? BigDecimal.ZERO : totalHours,
+      overtimeHours == null ? BigDecimal.ZERO : overtimeHours,
       status == null ? "" : status,
       remark == null ? "" : remark
     };
@@ -77,6 +93,14 @@ public class Attendance {
 
   public void setStaffId(long staffId) {
     this.staffId = staffId;
+  }
+
+  public Long getRosterId() {
+    return rosterId;
+  }
+
+  public void setRosterId(Long rosterId) {
+    this.rosterId = rosterId;
   }
 
   public LocalDate getDate() {
@@ -117,6 +141,14 @@ public class Attendance {
 
   public void setTotalHours(BigDecimal totalHours) {
     this.totalHours = totalHours;
+  }
+
+  public BigDecimal getOvertimeHours() {
+    return overtimeHours;
+  }
+
+  public void setOvertimeHours(BigDecimal overtimeHours) {
+    this.overtimeHours = overtimeHours;
   }
 
   public String getStatus() {
@@ -165,5 +197,69 @@ public class Attendance {
 
   public void setShiftLabel(String shiftLabel) {
     this.shiftLabel = shiftLabel;
+  }
+
+  public long getPunchCount() {
+    return punchCount;
+  }
+
+  public void setPunchCount(long punchCount) {
+    this.punchCount = punchCount;
+  }
+
+  public LocalTime getFirstIn() {
+    return firstIn;
+  }
+
+  public void setFirstIn(LocalTime firstIn) {
+    this.firstIn = firstIn;
+  }
+
+  public LocalTime getLastOut() {
+    return lastOut;
+  }
+
+  public void setLastOut(LocalTime lastOut) {
+    this.lastOut = lastOut;
+  }
+
+  public List<LocalTime> getPunches() {
+    return punches;
+  }
+
+  public void setPunches(List<LocalTime> punches) {
+    this.punches = punches == null ? new ArrayList<>() : new ArrayList<>(punches);
+  }
+
+  /**
+   * Recomputes timeIn, timeOut and totalHours from the punch list: pairs are
+   * summed (an overnight pair adds 24h), an unpaired final punch is ignored,
+   * and an empty list forces 00:00-00:00 with 0 hours (ABSENT/LEAVE rows).
+   */
+  public void recomputeFromPunches() {
+    if (punches == null || punches.isEmpty()) {
+      timeIn = LocalTime.MIDNIGHT;
+      timeOut = LocalTime.MIDNIGHT;
+      totalHours = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+      return;
+    }
+    timeIn = punches.get(0);
+    timeOut = punches.get(punches.size() - 1);
+    BigDecimal hours = BigDecimal.ZERO;
+    for (int i = 0; i + 1 < punches.size(); i += 2) {
+      hours = hours.add(hoursBetween(punches.get(i), punches.get(i + 1)));
+    }
+    totalHours = hours.setScale(2, RoundingMode.HALF_UP);
+  }
+
+  private static BigDecimal hoursBetween(LocalTime in, LocalTime out) {
+    LocalDateTime inDt = LocalDateTime.of(LocalDate.EPOCH, in);
+    LocalDateTime outDt = LocalDateTime.of(LocalDate.EPOCH, out);
+    if (!outDt.isAfter(inDt)) {
+      outDt = outDt.plusDays(1); // overnight pair
+    }
+    long minutes = Duration.between(inDt, outDt).toMinutes();
+    return BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 4,
+            RoundingMode.HALF_UP);
   }
 }

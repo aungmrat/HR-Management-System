@@ -119,7 +119,8 @@ public class MainFrame extends javax.swing.JFrame {
                   "military_service", "family_member", "overtime_policy",
                   "benefit", "allowance", "salary_rate", "tax",
                   "leave_type", "leave_entitlement", "leave_application",
-                  "leave_approval", "leave_history", "shift", "duty_roster");
+                  "leave_approval", "leave_history", "attendance", "shift",
+                  "duty_roster");
 
   /**
    * Cards that expose {@code refreshTable()}; invoked on navigation so a screen
@@ -202,8 +203,10 @@ public class MainFrame extends javax.swing.JFrame {
             new hrms.ui.leavemanagement.LeaveApproval();
     hrms.ui.leavemanagement.LeaveHistory leaveHistoryPanel =
             new hrms.ui.leavemanagement.LeaveHistory();
+    hrms.ui.attendanceandroster.Attendance attendancePanel =
+            new hrms.ui.attendanceandroster.Attendance();
     hrms.ui.attendanceandroster.Shift shiftPanel =
-            new hrms.ui.attendanceandroster.Shift();
+    new hrms.ui.attendanceandroster.Shift();
     hrms.ui.attendanceandroster.DutyRoster dutyRosterPanel =
             new hrms.ui.attendanceandroster.DutyRoster();
     content_panel.add(department, "department");
@@ -227,6 +230,7 @@ public class MainFrame extends javax.swing.JFrame {
     content_panel.add(leaveApplicationPanel, "leave_application");
     content_panel.add(leaveApprovalPanel, "leave_approval");
     content_panel.add(leaveHistoryPanel, "leave_history");
+    content_panel.add(attendancePanel, "attendance");
     content_panel.add(shiftPanel, "shift");
     content_panel.add(dutyRosterPanel, "duty_roster");
     refreshers.put("department", department::refreshTable);
@@ -250,6 +254,7 @@ public class MainFrame extends javax.swing.JFrame {
     refreshers.put("leave_application", leaveApplicationPanel::refreshTable);
     refreshers.put("leave_approval", leaveApprovalPanel::refreshTable);
     refreshers.put("leave_history", leaveHistoryPanel::refreshTable);
+    refreshers.put("attendance", attendancePanel::refreshTable);
     refreshers.put("shift", shiftPanel::refreshTable);
     refreshers.put("duty_roster", dutyRosterPanel::refreshTable);
     // Every other visible menu leaf gets a placeholder card so navigation
