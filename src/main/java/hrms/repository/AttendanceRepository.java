@@ -31,16 +31,16 @@ public final class AttendanceRepository {
   };
 
   public static List<Object[]> findAllAsTableRows(String keyword, String status,
-          LocalDate from, LocalDate to) {
+          LocalDate from, LocalDate to, Long departmentId) {
     List<Object[]> tableRows = new ArrayList<>();
-    for (Attendance attendance : findAll(keyword, status, from, to)) {
+    for (Attendance attendance : findAll(keyword, status, from, to, departmentId)) {
       tableRows.add(attendance.toTableRow());
     }
     return tableRows;
   }
 
   public static List<Attendance> findAll(String keyword, String status,
-          LocalDate from, LocalDate to) {
+          LocalDate from, LocalDate to, Long departmentId) {
     StringBuilder sql = new StringBuilder(SELECT_SQL);
     List<Object> params = new ArrayList<>();
     if (keyword != null && !keyword.isBlank()) {
@@ -53,6 +53,10 @@ public final class AttendanceRepository {
     if (status != null && !status.isBlank()) {
       sql.append(" AND a.status = ?");
       params.add(status.trim());
+    }
+    if (departmentId != null) {
+      sql.append(" AND s.department_id = ?");
+      params.add(departmentId);
     }
     if (from != null) {
       sql.append(" AND a.date >= ?");
@@ -67,7 +71,91 @@ public final class AttendanceRepository {
   }
 
   public static Optional<Attendance> findById(long id) {
-    return Sql.queryOne(SELECT_SQL + " AND a.id = ?", AttendanceRepository::mapRow, id);
+    Optional<Attendance> found =
+            Sql.queryOne(SELECT_SQL + " AND a.id = ?", AttendanceRepository::mapRow, id);
+    found.ifPresent(attendance -> attendance.setPunches(
+            AttendancePunchRepository.listTimesByAttendance(attendance.getId())));
+    return found;
+  }
+
+  /** The staff's row for a date, punches included (empty when none exists). */
+  public static Optional<Attendance> findByStaffDate(long staffId, LocalDate date) {
+    Optional<Attendance> found = Sql.queryOne(
+            SELECT_SQL + " AND a.staff_id = ? AND a.date = ?",
+            AttendanceRepository::mapRow, staffId, date);
+    found.ifPresent(attendance -> attendance.setPunches(
+            AttendancePunchRepository.listTimesByAttendance(attendance.getId())));
+    return found;
+  }
+
+  /** One staff's rows for a date range, ordered by date (monthly view). */
+  public static List<Attendance> findAllForStaff(long staffId, LocalDate from,
+          LocalDate to) {
+    return Sql.query(SELECT_SQL
+            + " AND a.staff_id = ? AND a.date >= ? AND a.date <= ?"
+            + " ORDER BY a.date ASC, a.id ASC",
+            AttendanceRepository::mapRow, staffId, from, to);
+  }
+
+  /**
+   * Batch-marks ABSENT for a date: every rostered staff without an attendance
+   * row and without an approved leave covering the date. Returns the number of
+   * rows inserted.
+   */
+  public static int markAbsentees(LocalDate date, Long createdBy) {
+    if (date == null) {
+      throw new IllegalArgumentException("date is required");
+    }
+    return Sql.update("""
+            INSERT INTO attendance
+              (staff_id, roster_id, date, shift_id, time_in, time_out, total_hours,
+               overtime_hours, status, remark, created_by, created_date, is_deleted)
+            SELECT dr.staff_id, dr.id, ?, dr.shift_id, '00:00:00', '00:00:00', 0, 0,
+                   'ABSENT', 'Auto: no punch', ?, CURRENT_TIMESTAMP, FALSE
+              FROM duty_roster dr
+             WHERE dr.roster_date = ? AND dr.is_deleted = FALSE
+               AND NOT EXISTS (SELECT 1 FROM attendance a
+                                WHERE a.staff_id = dr.staff_id
+                                  AND a.date = dr.roster_date
+                                  AND a.is_deleted = FALSE)
+               AND NOT EXISTS (SELECT 1 FROM leave_application la
+                                WHERE la.staff_id = dr.staff_id
+                                  AND la.status = 'APPROVED'
+                                  AND la.is_deleted = FALSE
+                                  AND dr.roster_date BETWEEN la.from_date AND la.to_date)
+            """,
+            date, createdBy, date);
+  }
+
+  /**
+   * Per-staff totals for one month (monthly view): staff label, present days
+   * (PRESENT + OVERTIME), half days, absent days, leave days, hours, overtime.
+   */
+  public static List<Object[]> monthlySummary(int year, int month) {
+    return Sql.query("""
+            SELECT CONCAT(s.code, ' - ', s.name) AS staff_name,
+                   SUM(CASE WHEN a.status IN ('PRESENT', 'OVERTIME') THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN a.status IN ('HALF_DAY_AM', 'HALF_DAY_PM') THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN a.status = 'ABSENT' THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN a.status = 'LEAVE' THEN 1 ELSE 0 END),
+                   COALESCE(SUM(a.total_hours), 0),
+                   COALESCE(SUM(a.overtime_hours), 0)
+              FROM attendance a
+              JOIN staff s ON s.id = a.staff_id
+             WHERE YEAR(a.date) = ? AND MONTH(a.date) = ? AND a.is_deleted = FALSE
+             GROUP BY s.id, s.code, s.name
+             ORDER BY s.code
+            """,
+            rs -> new Object[]{
+              rs.getString(1),
+              rs.getLong(2),
+              rs.getLong(3),
+              rs.getLong(4),
+              rs.getLong(5),
+              rs.getBigDecimal(6),
+              rs.getBigDecimal(7)
+            },
+            year, month);
   }
 
   /** True when another non-deleted row already records this staff on this date. */
@@ -129,7 +217,10 @@ public final class AttendanceRepository {
     if (exists(attendance.getStaffId(), attendance.getDate(), null)) {
       throw duplicateDate();
     }
-    return insertRow(attendance);
+    attendance.recomputeFromPunches();
+    long id = insertRow(attendance);
+    AttendancePunchRepository.replaceAll(id, attendance.getPunches());
+    return id;
   }
 
   /** Updates editable fields; returns true when a row was changed. */
@@ -143,14 +234,17 @@ public final class AttendanceRepository {
     if (exists(attendance.getStaffId(), attendance.getDate(), attendance.getId())) {
       throw duplicateDate();
     }
+    attendance.recomputeFromPunches();
     int updated = Sql.update("""
             UPDATE attendance
                SET staff_id = ?,
+                   roster_id = ?,
                    date = ?,
                    shift_id = ?,
                    time_in = ?,
                    time_out = ?,
                    total_hours = ?,
+                   overtime_hours = ?,
                    status = ?,
                    remark = ?,
                    modified_by = ?,
@@ -158,15 +252,20 @@ public final class AttendanceRepository {
              WHERE id = ? AND is_deleted = FALSE
             """,
             attendance.getStaffId(),
+            attendance.getRosterId(),
             attendance.getDate(),
-            attendance.getShiftId(),
+            attendance.getShiftId() <= 0 ? null : attendance.getShiftId(),
             attendance.getTimeIn(),
             attendance.getTimeOut(),
             attendance.getTotalHours(),
+            attendance.getOvertimeHours(),
             attendance.getStatus(),
             blankToNull(attendance.getRemark()),
             attendance.getModifiedBy(),
             attendance.getId());
+    if (updated > 0) {
+      AttendancePunchRepository.replaceAll(attendance.getId(), attendance.getPunches());
+    }
     return updated > 0;
   }
 
@@ -191,16 +290,18 @@ public final class AttendanceRepository {
     try {
       return Sql.insert("""
               INSERT INTO attendance
-                (staff_id, date, shift_id, time_in, time_out, total_hours,
-                 status, remark, created_by, created_date, is_deleted)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, FALSE)
+                (staff_id, roster_id, date, shift_id, time_in, time_out, total_hours,
+                 overtime_hours, status, remark, created_by, created_date, is_deleted)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, FALSE)
               """,
               attendance.getStaffId(),
+              attendance.getRosterId(),
               attendance.getDate(),
-              attendance.getShiftId(),
+              attendance.getShiftId() <= 0 ? null : attendance.getShiftId(),
               attendance.getTimeIn(),
               attendance.getTimeOut(),
               attendance.getTotalHours(),
+              attendance.getOvertimeHours(),
               attendance.getStatus(),
               blankToNull(attendance.getRemark()),
               attendance.getCreatedBy());
@@ -213,16 +314,25 @@ public final class AttendanceRepository {
   }
 
   private static final String SELECT_SQL = """
-          SELECT a.id, a.staff_id, a.date, a.shift_id, a.time_in, a.time_out,
-                 a.total_hours, a.status, a.remark, a.created_by,
+          SELECT a.id, a.staff_id, a.roster_id, a.date, a.shift_id, a.time_in,
+                 a.time_out, a.total_hours, a.overtime_hours, a.status, a.remark,
+                 a.created_by,
                  CONCAT(s.code, ' - ', s.name) AS staff_name,
-                 CONCAT(sh.code, ' ',
-                        TIME_FORMAT(sh.start_time, '%H:%i'), '-',
-                        TIME_FORMAT(sh.end_time, '%H:%i'),
-                        IF(sh.is_overnight, ' +1', '')) AS shift_label
+                 CASE WHEN sh.id IS NULL THEN ''
+                      ELSE CONCAT(sh.code, ' ',
+                                  TIME_FORMAT(sh.start_time, '%H:%i'), '-',
+                                  TIME_FORMAT(sh.end_time, '%H:%i'),
+                                  IF(sh.is_overnight, ' +1', ''))
+                 END AS shift_label,
+                 (SELECT COUNT(*) FROM attendance_punch p
+                   WHERE p.attendance_id = a.id) DIV 2 AS punch_count,
+                 (SELECT MIN(p.punch_time) FROM attendance_punch p
+                   WHERE p.attendance_id = a.id AND p.punch_type = 'IN') AS first_in,
+                 (SELECT MAX(p.punch_time) FROM attendance_punch p
+                   WHERE p.attendance_id = a.id AND p.punch_type = 'OUT') AS last_out
             FROM attendance a
             JOIN staff s ON s.id = a.staff_id
-            JOIN shift sh ON sh.id = a.shift_id
+            LEFT JOIN shift sh ON sh.id = a.shift_id
            WHERE a.is_deleted = FALSE
           """;
 
@@ -230,17 +340,24 @@ public final class AttendanceRepository {
     Attendance attendance = new Attendance();
     attendance.setId(rs.getLong("id"));
     attendance.setStaffId(rs.getLong("staff_id"));
+    long rosterId = rs.getLong("roster_id");
+    attendance.setRosterId(rs.wasNull() ? null : rosterId);
     attendance.setDate(rs.getObject("date", LocalDate.class));
-    attendance.setShiftId(rs.getLong("shift_id"));
+    long shiftId = rs.getLong("shift_id");
+    attendance.setShiftId(rs.wasNull() ? 0L : shiftId);
     attendance.setTimeIn(rs.getObject("time_in", LocalTime.class));
     attendance.setTimeOut(rs.getObject("time_out", LocalTime.class));
     attendance.setTotalHours(rs.getBigDecimal("total_hours"));
+    attendance.setOvertimeHours(rs.getBigDecimal("overtime_hours"));
     attendance.setStatus(rs.getString("status"));
     attendance.setRemark(rs.getString("remark"));
     long createdBy = rs.getLong("created_by");
     attendance.setCreatedBy(rs.wasNull() ? null : createdBy);
     attendance.setStaffName(rs.getString("staff_name"));
     attendance.setShiftLabel(rs.getString("shift_label"));
+    attendance.setPunchCount(rs.getLong("punch_count"));
+    attendance.setFirstIn(rs.getObject("first_in", LocalTime.class));
+    attendance.setLastOut(rs.getObject("last_out", LocalTime.class));
     return attendance;
   }
 

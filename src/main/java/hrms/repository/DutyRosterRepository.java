@@ -36,6 +36,24 @@ public final class DutyRosterRepository {
             staffId, date);
   }
 
+  /** Roster link for the staff/date: shift + duty_roster row id. */
+  public record RosterRef(long shiftId, long rosterId) {
+  }
+
+  /** The staff's rostered shift for the date, with the roster row id. */
+  public static Optional<RosterRef> findRosterFor(long staffId, LocalDate date) {
+    return Sql.queryOne(
+            """
+            SELECT shift_id, id
+              FROM duty_roster
+             WHERE staff_id = ? AND roster_date = ? AND is_deleted = FALSE
+             ORDER BY id DESC
+             LIMIT 1
+            """,
+            rs -> new RosterRef(rs.getLong(1), rs.getLong(2)),
+            staffId, date);
+  }
+
   /**
    * Roster rows for the inclusive date range, joined with staff/shift labels
    * and the matching attendance status (null when attendance was not recorded).

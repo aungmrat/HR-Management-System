@@ -507,36 +507,43 @@ public class DutyRoster extends javax.swing.JPanel {
   }
 
   /**
-   * Paints week-grid cells as rounded shift-code chips colored by the same
-   * semantic roles StatusBadge uses.
+   * Paints week-grid cells as a normal background with a small centered
+   * rounded badge pill inside — shift code in the semantic color, band/alarm
+   * tint on the pill only (not the whole cell).
    */
   private static final class ChipRenderer extends DefaultTableCellRenderer {
 
     private static final int CHIP_HEIGHT = 22;
+    private static final int CHIP_RADIUS = 11;
+    private static final int CHIP_PAD_X = 12;
+    private static final int CHIP_MIN_WIDTH = 56;
+
+    /** Chip shown in the current cell; null for plain-text cells. */
+    private CellChip chip;
+    private Color pillFill;
+    private Color pillText;
 
     @Override
     public Component getTableCellRendererComponent(JTable table, Object value,
         boolean isSelected, boolean hasFocus, int row, int column) {
       JLabel label = (JLabel) super.getTableCellRendererComponent(
           table, value, isSelected, hasFocus, row, column);
-      if (value instanceof CellChip chip) {
-        label.setText(chip.code());
+      this.chip = value instanceof CellChip c ? c : null;
+      label.setOpaque(true);
+      if (chip != null) {
+        // Text is painted inside the pill in paintComponent.
+        label.setText("");
         label.setToolTipText(chip.tooltip());
         label.setHorizontalAlignment(SwingConstants.CENTER);
-        label.setOpaque(true);
-        Role stateRole = StatusBadge.roleFor(chip.state());
-        Color stateColor = Palette.color(stateRole);
         Color chipBg = Palette.color(chip.bgRole());
         if (isSelected) {
-          // Keep a hint of the chip color but anchor to the selection colors
-          // so the text stays readable (semantic red on accent blue did not).
-          label.setBackground(UiGraphics.blend(
-              table.getSelectionBackground(), chipBg, 0.30));
-          label.setForeground(table.getSelectionForeground());
+          label.setBackground(table.getSelectionBackground());
+          pillFill = UiGraphics.blend(table.getSelectionBackground(), chipBg, 0.30);
+          pillText = table.getSelectionForeground();
         } else {
-          label.setBackground(UiGraphics.blend(
-              Palette.color(Role.CARD_BG), chipBg, 0.14));
-          label.setForeground(stateColor);
+          label.setBackground(table.getBackground());
+          pillFill = UiGraphics.blend(Palette.color(Role.CARD_BG), chipBg, 0.14);
+          pillText = Palette.color(StatusBadge.roleFor(chip.state()));
         }
       } else {
         // Plain-text cells (Staff column): show the value and reset the
@@ -544,13 +551,38 @@ public class DutyRoster extends javax.swing.JPanel {
         label.setText(value == null ? "" : value.toString());
         label.setToolTipText(null);
         label.setHorizontalAlignment(SwingConstants.LEFT);
-        label.setOpaque(true);
         label.setBackground(isSelected ? table.getSelectionBackground()
             : table.getBackground());
         label.setForeground(isSelected ? table.getSelectionForeground()
             : table.getForeground());
       }
       return label;
+    }
+
+    @Override
+    protected void paintComponent(java.awt.Graphics graphics) {
+      super.paintComponent(graphics);
+      if (chip == null) {
+        return;
+      }
+      java.awt.Graphics2D g = (java.awt.Graphics2D) graphics.create();
+      UiGraphics.enableAntialiasing(g);
+      String text = chip.code();
+      java.awt.Font bold = getFont().deriveFont(java.awt.Font.BOLD);
+      g.setFont(bold);
+      java.awt.FontMetrics metrics = g.getFontMetrics(bold);
+      int textWidth = metrics.stringWidth(text);
+      int pillWidth = Math.max(textWidth + CHIP_PAD_X * 2, CHIP_MIN_WIDTH);
+      int pillX = (getWidth() - pillWidth) / 2;
+      int pillY = (getHeight() - CHIP_HEIGHT) / 2;
+      UiGraphics.fillRoundRect(g, pillX, pillY, pillWidth, CHIP_HEIGHT,
+          CHIP_RADIUS, pillFill);
+      g.setColor(pillText);
+      int textX = pillX + (pillWidth - textWidth) / 2;
+      int textY = pillY + (CHIP_HEIGHT + metrics.getAscent()
+          - metrics.getDescent()) / 2 - 1;
+      g.drawString(text, textX, textY);
+      g.dispose();
     }
   }
 
