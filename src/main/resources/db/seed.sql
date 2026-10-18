@@ -139,6 +139,8 @@ INSERT IGNORE INTO permission (code, module, description) VALUES
   -- Payroll & Compensation
   ('STAFF_SALARY_VIEW',           'payroll_compensation', 'View staff salaries'),
   ('STAFF_BENEFIT_VIEW',          'payroll_compensation', 'View staff benefits'),
+  ('STAFF_BENEFIT_ASSIGN',        'payroll_compensation', 'Assign or end staff benefits'),
+  ('STAFF_BENEFIT_UPDATE',        'payroll_compensation', 'Edit staff benefit dates'),
   ('STAFF_ALLOWANCE_VIEW',        'payroll_compensation', 'View staff allowances'),
   ('PAYROLL_VIEW',                'payroll_compensation', 'View payroll runs'),
   ('PAYROLL_DETAILS_VIEW',        'payroll_compensation', 'View payroll details'),

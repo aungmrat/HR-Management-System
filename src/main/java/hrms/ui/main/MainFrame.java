@@ -121,7 +121,7 @@ public class MainFrame extends javax.swing.JFrame {
                   "leave_type", "leave_entitlement", "leave_application",
           "leave_approval", "leave_history", "attendance", "shift",
           "duty_roster", "gazetted_holiday", "holiday_calendar",
-          "staff_salary");
+          "staff_salary", "staff_benefit");
 
   /**
    * Cards that expose {@code refreshTable()}; invoked on navigation so a screen
@@ -216,6 +216,8 @@ public class MainFrame extends javax.swing.JFrame {
             new hrms.ui.attendanceandroster.DutyRoster();
     hrms.ui.payrollandcompensation.StaffSalary staffSalaryPanel =
             new hrms.ui.payrollandcompensation.StaffSalary();
+    hrms.ui.payrollandcompensation.StaffBenefit staffBenefitPanel =
+            new hrms.ui.payrollandcompensation.StaffBenefit();
     content_panel.add(department, "department");
     content_panel.add(office, "office");
     content_panel.add(position, "position");
@@ -243,6 +245,7 @@ public class MainFrame extends javax.swing.JFrame {
     content_panel.add(shiftPanel, "shift");
     content_panel.add(dutyRosterPanel, "duty_roster");
     content_panel.add(staffSalaryPanel, "staff_salary");
+    content_panel.add(staffBenefitPanel, "staff_benefit");
     refreshers.put("department", department::refreshTable);
     refreshers.put("office", office::refreshTable);
     refreshers.put("position", position::refreshTable);
@@ -270,6 +273,7 @@ public class MainFrame extends javax.swing.JFrame {
     refreshers.put("shift", shiftPanel::refreshTable);
     refreshers.put("duty_roster", dutyRosterPanel::refreshTable);
     refreshers.put("staff_salary", staffSalaryPanel::refreshTable);
+    refreshers.put("staff_benefit", staffBenefitPanel::refreshTable);
     // Every other visible menu leaf gets a placeholder card so navigation
     // never silently no-ops.
     for (MenuLeaf leaf : visibleLeaves()) {
