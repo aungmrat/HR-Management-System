@@ -27,8 +27,10 @@ import hrms.ui.theme.ThemeManager;
  * Sun-first month grid of holidays in the hc.png style: weekday header plus
  * day cells carrying one rounded red pill per holiday covering that date.
  * Header/picker/nav live on the owning screen - this is grid only. Owners
- * supply the visible month's holidays and opt into pill/day clicks (no
- * handlers = read-only).
+ * supply the visible month's holidays and opt into holiday/day clicks (no
+ * handlers = read-only). Any click inside a day that has holidays opens
+ * edit for the first covering holiday (pill miss included); only empty
+ * days trigger the create handler.
  *
  * @author aungmrat
  */
@@ -96,13 +98,13 @@ public class HolidayCalendarView extends javax.swing.JPanel {
     return month;
   }
 
-  /** Edit entry: pill click. Unset (or no permission) = display-only. */
+  /** Edit entry: pill click or any click inside a holiday's day cell. Unset = display-only. */
   public void setOnHolidayClick(java.util.function.Consumer<GazettedHoliday> handler) {
     this.onHolidayClick = handler;
     rebuild();
   }
 
-  /** Quick-create entry: click an empty day. Unset = display-only. */
+  /** Quick-create entry: click an empty day (holiday days route to edit). Unset = display-only. */
   public void setOnDayClick(java.util.function.Consumer<LocalDate> handler) {
     this.onDayClick = handler;
     rebuild();
@@ -170,20 +172,28 @@ public class HolidayCalendarView extends javax.swing.JPanel {
             : Palette.color(Palette.Role.TEXT_MUTED));
     cell.add(dayLabel, BorderLayout.NORTH);
 
+    List<GazettedHoliday> covering = holidaysOn(date);
     JPanel chips = new JPanel();
     chips.setOpaque(false);
     chips.setLayout(new BoxLayout(chips, BoxLayout.Y_AXIS));
-    for (GazettedHoliday holiday : holidaysOn(date)) {
+    for (GazettedHoliday holiday : covering) {
       chips.add(new HolidayChip(holiday));
     }
     cell.add(chips, BorderLayout.CENTER);
 
-    if (onDayClick != null) {
+    if (onDayClick != null || onHolidayClick != null) {
       cell.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
       cell.addMouseListener(new MouseAdapter() {
         @Override
         public void mouseClicked(MouseEvent e) {
-          onDayClick.accept(date);
+          if (e.getClickCount() != 1) {
+            return;
+          }
+          if (!covering.isEmpty() && onHolidayClick != null) {
+            onHolidayClick.accept(covering.get(0));
+          } else if (onDayClick != null) {
+            onDayClick.accept(date);
+          }
         }
       });
     }
@@ -219,6 +229,9 @@ public class HolidayCalendarView extends javax.swing.JPanel {
         addMouseListener(new MouseAdapter() {
           @Override
           public void mouseClicked(MouseEvent e) {
+            if (e.getClickCount() != 1) {
+              return;
+            }
             onHolidayClick.accept(holiday);
           }
         });

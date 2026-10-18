@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory;
 /**
  * The app's single holiday calendar: hc.png-style month grid driven by the
  * header picker and prev/today/next buttons. Clicks are interactive only for
- * GAZETTED_HOLIDAY_VIEW holders (pill = edit, empty day = create); everyone
- * else gets a read-only view with tooltips.
+ * GAZETTED_HOLIDAY_VIEW holders (holiday cell/pill = edit, empty day =
+ * create); everyone else gets a read-only view with tooltips.
  *
  * @author aungmrat
  */
