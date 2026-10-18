@@ -608,7 +608,6 @@ public class MainFrame extends javax.swing.JFrame {
   @SuppressWarnings("unchecked")
   // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
   private void initComponents() {
-    java.awt.GridBagConstraints gridBagConstraints;
 
     header_panel = new javax.swing.JPanel() {
       @Override
@@ -692,18 +691,32 @@ public class MainFrame extends javax.swing.JFrame {
     header_panel.setLayout(new java.awt.BorderLayout());
 
     left.setPreferredSize(new java.awt.Dimension(220, 60));
-    left.setLayout(new java.awt.GridBagLayout());
 
     menu_icon.setPreferredSize(new java.awt.Dimension(40, 20));
     menu_icon.addActionListener(this::menu_iconActionPerformed);
-    gridBagConstraints = new java.awt.GridBagConstraints();
-    gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 82);
-    left.add(menu_icon, gridBagConstraints);
 
     hrms.setText("HRMS  ");
-    gridBagConstraints = new java.awt.GridBagConstraints();
-    gridBagConstraints.insets = new java.awt.Insets(0, 3, 0, 8);
-    left.add(hrms, gridBagConstraints);
+
+    javax.swing.GroupLayout leftLayout = new javax.swing.GroupLayout(left);
+    left.setLayout(leftLayout);
+    leftLayout.setHorizontalGroup(
+      leftLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+      .addGroup(leftLayout.createSequentialGroup()
+        .addGap(17, 17, 17)
+        .addComponent(menu_icon, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+        .addGap(37, 37, 37)
+        .addComponent(hrms)
+        .addContainerGap())
+    );
+    leftLayout.setVerticalGroup(
+      leftLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+      .addGroup(leftLayout.createSequentialGroup()
+        .addGap(20, 20, 20)
+        .addGroup(leftLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+          .addComponent(hrms)
+          .addComponent(menu_icon, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+        .addGap(20, 20, 20))
+    );
 
     header_panel.add(left, java.awt.BorderLayout.LINE_START);
 
