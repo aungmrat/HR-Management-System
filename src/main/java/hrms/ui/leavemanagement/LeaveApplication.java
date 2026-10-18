@@ -160,7 +160,7 @@ public class LeaveApplication extends javax.swing.JPanel {
               "Remaining", "Effective Date", "Expiry Date"}
             : new String[]{"Leave Type", "Entitled", "Carried", "Used",
               "Remaining", "Effective Date", "Expiry Date"};
-    balanceTable = HrmsTable.builder(balanceHeaders)
+    balanceTable = HrmsTable.builder((Object[]) balanceHeaders)
         .columnType(includeStaff ? 2 : 1, Integer.class)
         .columnType(includeStaff ? 3 : 2, Integer.class)
         .columnType(includeStaff ? 4 : 3, Integer.class)
