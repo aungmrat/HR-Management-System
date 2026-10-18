@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 
 import hrms.exception.BusinessException;
@@ -140,44 +141,48 @@ public final class StaffRepository {
     requireOptionalLengths(staff);
     requireUnique(code, email, nid, null);
     try {
-      return Sql.insert("""
-              INSERT INTO staff
-                (code, name, dob, sex, blood, contact_no, department_id, email, address,
-                 position_id, team_id, office_id, salary, application_date,
-                 commencement_date, contract_type, marital_status, next_of_kin,
-                 emergency_contact, health_status, status, nid, education_level,
-                 other_skills, hobby, has_driving_licence, created_by, created_date,
-                 is_deleted)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                      ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, FALSE)
-              """,
-              code,
-              name,
-              staff.getDob(),
-              staff.getSex(),
-              blankToNull(staff.getBlood()),
-              staff.getContactNo(),
-              staff.getDepartmentId(),
-              email,
-              blankToNull(staff.getAddress()),
-              staff.getPositionId(),
-              staff.getTeamId(),
-              staff.getOfficeId(),
-              salary,
-              staff.getApplicationDate(),
-              staff.getCommencementDate(),
-              blankToNull(staff.getContractType()),
-              blankToNull(staff.getMaritalStatus()),
-              blankToNull(staff.getNextOfKin()),
-              blankToNull(staff.getEmergencyContact()),
-              blankToNull(staff.getHealthStatus()),
-              status,
-              nid,
-              blankToNull(staff.getEducationLevel()),
-              blankToNull(staff.getOtherSkills()),
-              blankToNull(staff.getHobby()),
-              staff.isHasDrivingLicence(),
-              staff.getCreatedBy());
+      return TransactionManager.execute(tx -> {
+        long id = tx.executeInsert("""
+                INSERT INTO staff
+                  (code, name, dob, sex, blood, contact_no, department_id, email, address,
+                   position_id, team_id, office_id, salary, application_date,
+                   commencement_date, contract_type, marital_status, next_of_kin,
+                   emergency_contact, health_status, status, nid, education_level,
+                   other_skills, hobby, has_driving_licence, created_by, created_date,
+                   is_deleted)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, FALSE)
+                """,
+                code,
+                name,
+                staff.getDob(),
+                staff.getSex(),
+                blankToNull(staff.getBlood()),
+                staff.getContactNo(),
+                staff.getDepartmentId(),
+                email,
+                blankToNull(staff.getAddress()),
+                staff.getPositionId(),
+                staff.getTeamId(),
+                staff.getOfficeId(),
+                salary,
+                staff.getApplicationDate(),
+                staff.getCommencementDate(),
+                blankToNull(staff.getContractType()),
+                blankToNull(staff.getMaritalStatus()),
+                blankToNull(staff.getNextOfKin()),
+                blankToNull(staff.getEmergencyContact()),
+                blankToNull(staff.getHealthStatus()),
+                status,
+                nid,
+                blankToNull(staff.getEducationLevel()),
+                blankToNull(staff.getOtherSkills()),
+                blankToNull(staff.getHobby()),
+                staff.isHasDrivingLicence(),
+                staff.getCreatedBy());
+        StaffSalaryRepository.seedInitial(tx, id, staff, salary);
+        return id;
+      });
     } catch (DataAccessException e) {
       if (isDuplicateKey(e)) {
         throw duplicateFallback();
@@ -208,68 +213,79 @@ public final class StaffRepository {
     String status = normalizeStatus(staff.getStatus());
     requireOptionalLengths(staff);
     requireUnique(code, email, nid, staff.getId());
+    Staff previous = findById(staff.getId()).orElse(null);
     try {
-      int updated = Sql.update("""
-              UPDATE staff
-                 SET code = ?,
-                     name = ?,
-                     dob = ?,
-                     sex = ?,
-                     blood = ?,
-                     contact_no = ?,
-                     department_id = ?,
-                     email = ?,
-                     address = ?,
-                     position_id = ?,
-                     team_id = ?,
-                     office_id = ?,
-                     salary = ?,
-                     application_date = ?,
-                     commencement_date = ?,
-                     contract_type = ?,
-                     marital_status = ?,
-                     next_of_kin = ?,
-                     emergency_contact = ?,
-                     health_status = ?,
-                     status = ?,
-                     nid = ?,
-                     education_level = ?,
-                     other_skills = ?,
-                     hobby = ?,
-                     has_driving_licence = ?,
-                     modified_by = ?,
-                     modified_date = CURRENT_TIMESTAMP
-               WHERE id = ? AND is_deleted = FALSE
-              """,
-              code,
-              name,
-              staff.getDob(),
-              staff.getSex(),
-              blankToNull(staff.getBlood()),
-              staff.getContactNo(),
-              staff.getDepartmentId(),
-              email,
-              blankToNull(staff.getAddress()),
-              staff.getPositionId(),
-              staff.getTeamId(),
-              staff.getOfficeId(),
-              salary,
-              staff.getApplicationDate(),
-              staff.getCommencementDate(),
-              blankToNull(staff.getContractType()),
-              blankToNull(staff.getMaritalStatus()),
-              blankToNull(staff.getNextOfKin()),
-              blankToNull(staff.getEmergencyContact()),
-              blankToNull(staff.getHealthStatus()),
-              status,
-              nid,
-              blankToNull(staff.getEducationLevel()),
-              blankToNull(staff.getOtherSkills()),
-              blankToNull(staff.getHobby()),
-              staff.isHasDrivingLicence(),
-              staff.getModifiedBy(),
-              staff.getId());
-      return updated > 0;
+      return TransactionManager.execute(tx -> {
+        int updated = tx.executeUpdate("""
+                UPDATE staff
+                   SET code = ?,
+                       name = ?,
+                       dob = ?,
+                       sex = ?,
+                       blood = ?,
+                       contact_no = ?,
+                       department_id = ?,
+                       email = ?,
+                       address = ?,
+                       position_id = ?,
+                       team_id = ?,
+                       office_id = ?,
+                       salary = ?,
+                       application_date = ?,
+                       commencement_date = ?,
+                       contract_type = ?,
+                       marital_status = ?,
+                       next_of_kin = ?,
+                       emergency_contact = ?,
+                       health_status = ?,
+                       status = ?,
+                       nid = ?,
+                       education_level = ?,
+                       other_skills = ?,
+                       hobby = ?,
+                       has_driving_licence = ?,
+                       modified_by = ?,
+                       modified_date = CURRENT_TIMESTAMP
+                 WHERE id = ? AND is_deleted = FALSE
+                """,
+                code,
+                name,
+                staff.getDob(),
+                staff.getSex(),
+                blankToNull(staff.getBlood()),
+                staff.getContactNo(),
+                staff.getDepartmentId(),
+                email,
+                blankToNull(staff.getAddress()),
+                staff.getPositionId(),
+                staff.getTeamId(),
+                staff.getOfficeId(),
+                salary,
+                staff.getApplicationDate(),
+                staff.getCommencementDate(),
+                blankToNull(staff.getContractType()),
+                blankToNull(staff.getMaritalStatus()),
+                blankToNull(staff.getNextOfKin()),
+                blankToNull(staff.getEmergencyContact()),
+                blankToNull(staff.getHealthStatus()),
+                status,
+                nid,
+                blankToNull(staff.getEducationLevel()),
+                blankToNull(staff.getOtherSkills()),
+                blankToNull(staff.getHobby()),
+                staff.isHasDrivingLicence(),
+                staff.getModifiedBy(),
+                staff.getId());
+        if (updated > 0 && previous != null) {
+          if (previous.getSalary() == null
+                  || previous.getSalary().compareTo(salary) != 0) {
+            StaffSalaryRepository.syncChange(tx, staff, salary);
+          } else if (!Objects.equals(previous.getPositionId(), staff.getPositionId())) {
+            StaffSalaryRepository.refreshBand(tx, staff, salary);
+          }
+        }
+        return updated > 0;
+      });
     } catch (DataAccessException e) {
       if (isDuplicateKey(e)) {
         throw duplicateFallback();
